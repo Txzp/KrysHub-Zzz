@@ -14060,112 +14060,113 @@ if aw.Acrylic then
 aq.init()
 end
 
--- User profile bottom sidebar
+-- User profile bottom sidebar for xFuxk UI
 do
- local function CreateUserProfile(ParentFrame)
-    if not ParentFrame then return end
-    
-    local LocalPlayer = game.Players.LocalPlayer
-    if not LocalPlayer then return end
-
-    -- Usamos la librería interna 'ao' (aa.Creator) para que respete los temas
-    local ao = aa.Creator 
-    local ap = ao.New -- Función helper para crear instancias con propiedades por defecto
-
-    local ProfileFrame = ap("Frame", {
-        Name = "xFuxk_UserProfile_Frame",
-        Size = UDim2.new(1, 0, 0, 65), -- Un poco más alto para mejor espaciado
-        AnchorPoint = Vector2.new(0, 1),
-        Position = UDim2.new(0, 0, 1, 0),
-        BackgroundTransparency = 1, -- Dejamos que el tema maneje el fondo si quieres, o ponemos un color fijo
-        LayoutOrder = 9999,
-        Parent = ParentFrame
-    }, {
-        -- Fondo del perfil usando el tema "PanelBackground" o un color fijo oscuro
-        ao.NewRoundFrame(8, "Squircle", {
-            Size = UDim2.new(1, 0, 1, 0),
-            ThemeTag = {
-                ImageColor3 = "WindowBackground", -- Se adapta al tema actual
-                ImageTransparency = 0 -- Opcional: hacerlo semi-transparente
-            }
-        }),
+    local function CreateUserProfile(ParentFrame)
+        if not ParentFrame then return end
         
-        -- Separador superior
-        ap("Frame", {
-            Name = "xFuxk_Profile_Separator",
-            Size = UDim2.new(1, -20, 0, 1),
-            Position = UDim2.new(0, 10, 0, 0),
-            BackgroundTransparency = 0.8,
-            ThemeTag = {
-                BackgroundColor3 = "Text" -- Usa el color del texto pero muy transparente
-            }
-        }),
+        local LocalPlayer = game.Players.LocalPlayer
+        if not LocalPlayer then return end
 
-        -- Contenedor del Avatar
-        ap("Frame", {
-            Size = UDim2.new(0, 44, 0, 44),
-            Position = UDim2.new(0, 12, 0.5, 0),
-            AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundTransparency = 1
+        -- CORRECCIÓN: Usamos 'a' en lugar de 'aa' porque esa es la tabla global de WindUI en tu main.lua
+        local ao = a.Creator 
+        local ap = ao.New 
+
+        local ProfileFrame = ap("Frame", {
+            Name = "xFuxk_UserProfile_Frame",
+            Size = UDim2.new(1, 0, 0, 65),
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.new(0, 0, 1, 0),
+            BackgroundTransparency = 1,
+            LayoutOrder = 9999,
+            Parent = ParentFrame
         }, {
-            -- Imagen del Avatar
-            ap("ImageLabel", {
-                Name = "xFuxk_Avatar_Image",
+            -- Fondo del perfil
+            ao.NewRoundFrame(8, "Squircle", {
                 Size = UDim2.new(1, 0, 1, 0),
-                BackgroundTransparency = 1,
-                ScaleType = Enum.ScaleType.Crop,
-                Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(LocalPlayer.UserId) .. "&width=420&height=420&format=png"
+                ThemeTag = {
+                    ImageColor3 = "WindowBackground",
+                    ImageTransparency = 0
+                }
+            }),
+            
+            -- Separador superior
+            ap("Frame", {
+                Name = "xFuxk_Profile_Separator",
+                Size = UDim2.new(1, -20, 0, 1),
+                Position = UDim2.new(0, 10, 0, 0),
+                BackgroundTransparency = 0.8,
+                ThemeTag = {
+                    BackgroundColor3 = "Text"
+                }
+            }),
+
+            -- Contenedor del Avatar
+            ap("Frame", {
+                Size = UDim2.new(0, 44, 0, 44),
+                Position = UDim2.new(0, 12, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1
             }, {
-                ao.NewRoundFrame(999, "Squircle", { -- Círculo perfecto
+                ap("ImageLabel", {
+                    Name = "xFuxk_Avatar_Image",
                     Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    ScaleType = Enum.ScaleType.Crop,
+                    Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(LocalPlayer.UserId) .. "&width=420&height=420&format=png"
+                }, {
+                    ao.NewRoundFrame(999, "Squircle", {
+                        Size = UDim2.new(1, 0, 1, 0),
+                        ThemeTag = {
+                            ImageColor3 = "Accent",
+                            ImageTransparency = 0
+                        }
+                    })
+                })
+            }),
+
+            -- Información del Usuario
+            ap("Frame", {
+                Size = UDim2.new(1, -70, 0, 40),
+                Position = UDim2.new(0, 65, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1
+            }, {
+                ap("TextLabel", {
+                    Name = "xFuxk_Username_Text",
+                    Size = UDim2.new(1, 0, 0, 20),
+                    BackgroundTransparency = 1,
+                    Text = LocalPlayer.DisplayName,
+                    FontFace = Font.new(ao.Font, Enum.FontWeight.SemiBold),
+                    TextSize = 15,
+                    TextXAlignment = Enum.TextXAlignment.Left,
                     ThemeTag = {
-                        ImageColor3 = "Accent", -- Borde del color del tema
-                        ImageTransparency = 0
+                        TextColor3 = "Text"
+                    }
+                }),
+                ap("TextLabel", {
+                    Name = "xFuxk_UserTag_Text",
+                    Size = UDim2.new(1, 0, 0, 15),
+                    Position = UDim2.new(0, 0, 0, 18),
+                    BackgroundTransparency = 1,
+                    Text = "@xFuxk | xFuxk UI",
+                    FontFace = Font.new(ao.Font, Enum.FontWeight.Medium),
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ThemeTag = {
+                        TextColor3 = "Text",
+                        TextTransparency = 0.5
                     }
                 })
             })
-        }),
-
-        -- Información del Usuario
-        ap("Frame", {
-            Size = UDim2.new(1, -70, 0, 40),
-            Position = UDim2.new(0, 65, 0.5, 0),
-            AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundTransparency = 1
-        }, {
-            ap("TextLabel", {
-                Name = "xFuxk_Username_Text",
-                Size = UDim2.new(1, 0, 0, 20),
-                BackgroundTransparency = 1,
-                Text = LocalPlayer.DisplayName,
-                FontFace = Font.new(ao.Font, Enum.FontWeight.SemiBold),
-                TextSize = 15,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ThemeTag = {
-                    TextColor3 = "Text"
-                }
-            }),
-            ap("TextLabel", {
-                Name = "xFuxk_UserTag_Text",
-                Size = UDim2.new(1, 0, 0, 15),
-                Position = UDim2.new(0, 0, 0, 18),
-                BackgroundTransparency = 1,
-                Text = "@xFuxk | xFuxk UI", -- Personalizado para tu marca
-                FontFace = Font.new(ao.Font, Enum.FontWeight.Medium),
-                TextSize = 12,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ThemeTag = {
-                    TextColor3 = "Text",
-                    TextTransparency = 0.5
-                }
-            })
         })
-    })
 
-    return ProfileFrame
+        return ProfileFrame
+    end
+
+    -- Asignamos a la tabla global 'a'
+    a.CreateUserProfile = CreateUserProfile
 end
-
-aa.CreateUserProfile = CreateUserProfile
 
 
 
