@@ -14062,56 +14062,110 @@ end
 
 -- User profile bottom sidebar
 do
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    if LocalPlayer and b.UIElements and b.UIElements.SideBarContainer then
-        -- Separator line
-        local separator = Instance.new("Frame")
-        separator.Size = UDim2.new(1,-14,0,1)
-        separator.Position = UDim2.new(0,7,1,-50)
-        separator.AnchorPoint = Vector2.new(0,1)
-        separator.BackgroundTransparency = 0.85
-        separator.BackgroundColor3 = Color3.new(1,1,1)
-        separator.BorderSizePixel = 0
-        separator.Parent = b.UIElements.SideBarContainer
+ local function CreateUserProfile(ParentFrame)
+    if not ParentFrame then return end
+    
+    local LocalPlayer = game.Players.LocalPlayer
+    if not LocalPlayer then return end
+
+    -- Usamos la librería interna 'ao' (aa.Creator) para que respete los temas
+    local ao = aa.Creator 
+    local ap = ao.New -- Función helper para crear instancias con propiedades por defecto
+
+    local ProfileFrame = ap("Frame", {
+        Name = "xFuxk_UserProfile_Frame",
+        Size = UDim2.new(1, 0, 0, 65), -- Un poco más alto para mejor espaciado
+        AnchorPoint = Vector2.new(0, 1),
+        Position = UDim2.new(0, 0, 1, 0),
+        BackgroundTransparency = 1, -- Dejamos que el tema maneje el fondo si quieres, o ponemos un color fijo
+        LayoutOrder = 9999,
+        Parent = ParentFrame
+    }, {
+        -- Fondo del perfil usando el tema "PanelBackground" o un color fijo oscuro
+        ao.NewRoundFrame(8, "Squircle", {
+            Size = UDim2.new(1, 0, 1, 0),
+            ThemeTag = {
+                ImageColor3 = "WindowBackground", -- Se adapta al tema actual
+                ImageTransparency = 0 -- Opcional: hacerlo semi-transparente
+            }
+        }),
         
-        -- Profile frame
-        local profileFrame = Instance.new("Frame")
-        profileFrame.Size = UDim2.new(1,0,0,44)
-        profileFrame.Position = UDim2.new(0,0,1,0)
-        profileFrame.AnchorPoint = Vector2.new(0,1)
-        profileFrame.BackgroundTransparency = 1
-        profileFrame.BorderSizePixel = 0
-        profileFrame.Parent = b.UIElements.SideBarContainer
-        
-        -- Avatar image
-        local avatarImage = Instance.new("ImageLabel")
-        avatarImage.Size = UDim2.new(0,28,0,28)
-        avatarImage.Position = UDim2.new(0,10,0.5,0)
-        avatarImage.AnchorPoint = Vector2.new(0,0.5)
-        avatarImage.BackgroundTransparency = 1
-        avatarImage.BorderSizePixel = 0
-        avatarImage.Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=48&h=48"
-        avatarImage.Parent = profileFrame
-        
-        local avatarCorner = Instance.new("UICorner")
-        avatarCorner.CornerRadius = UDim.new(1,0)
-        avatarCorner.Parent = avatarImage
-        
-        -- Username label
-        local usernameLabel = Instance.new("TextLabel")
-        usernameLabel.Size = UDim2.new(1,-48,1,0)
-        usernameLabel.Position = UDim2.new(0,44,0,0)
-        usernameLabel.BackgroundTransparency = 1
-        usernameLabel.BorderSizePixel = 0
-        usernameLabel.Text = LocalPlayer.DisplayName
-        usernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        usernameLabel.TextSize = 15
-        usernameLabel.Font = Enum.Font.GothamBold
-        usernameLabel.TextColor3 = Color3.new(1,1,1)
-        usernameLabel.Parent = profileFrame
-    end
+        -- Separador superior
+        ap("Frame", {
+            Name = "xFuxk_Profile_Separator",
+            Size = UDim2.new(1, -20, 0, 1),
+            Position = UDim2.new(0, 10, 0, 0),
+            BackgroundTransparency = 0.8,
+            ThemeTag = {
+                BackgroundColor3 = "Text" -- Usa el color del texto pero muy transparente
+            }
+        }),
+
+        -- Contenedor del Avatar
+        ap("Frame", {
+            Size = UDim2.new(0, 44, 0, 44),
+            Position = UDim2.new(0, 12, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1
+        }, {
+            -- Imagen del Avatar
+            ap("ImageLabel", {
+                Name = "xFuxk_Avatar_Image",
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                ScaleType = Enum.ScaleType.Crop,
+                Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(LocalPlayer.UserId) .. "&width=420&height=420&format=png"
+            }, {
+                ao.NewRoundFrame(999, "Squircle", { -- Círculo perfecto
+                    Size = UDim2.new(1, 0, 1, 0),
+                    ThemeTag = {
+                        ImageColor3 = "Accent", -- Borde del color del tema
+                        ImageTransparency = 0
+                    }
+                })
+            })
+        }),
+
+        -- Información del Usuario
+        ap("Frame", {
+            Size = UDim2.new(1, -70, 0, 40),
+            Position = UDim2.new(0, 65, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1
+        }, {
+            ap("TextLabel", {
+                Name = "xFuxk_Username_Text",
+                Size = UDim2.new(1, 0, 0, 20),
+                BackgroundTransparency = 1,
+                Text = LocalPlayer.DisplayName,
+                FontFace = Font.new(ao.Font, Enum.FontWeight.SemiBold),
+                TextSize = 15,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ThemeTag = {
+                    TextColor3 = "Text"
+                }
+            }),
+            ap("TextLabel", {
+                Name = "xFuxk_UserTag_Text",
+                Size = UDim2.new(1, 0, 0, 15),
+                Position = UDim2.new(0, 0, 0, 18),
+                BackgroundTransparency = 1,
+                Text = "@xFuxk | xFuxk UI", -- Personalizado para tu marca
+                FontFace = Font.new(ao.Font, Enum.FontWeight.Medium),
+                TextSize = 12,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ThemeTag = {
+                    TextColor3 = "Text",
+                    TextTransparency = 0.5
+                }
+            })
+        })
+    })
+
+    return ProfileFrame
 end
+
+aa.CreateUserProfile = CreateUserProfile
 
 
 
