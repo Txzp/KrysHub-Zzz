@@ -14072,6 +14072,8 @@ local function CreateUserProfile(ParentFrame)
 	local LocalPlayer=game.Players.LocalPlayer
 	if not LocalPlayer then return end
 
+	local Creator=aa.Creator
+
 	local ProfileFrame=Instance.new("Frame")
 	ProfileFrame.Name="xFuxk_UserProfile_Frame"
 	ProfileFrame.Size=UDim2.new(1,0,0,60)
@@ -14081,6 +14083,16 @@ local function CreateUserProfile(ParentFrame)
 	ProfileFrame.BorderSizePixel=0
 	ProfileFrame.LayoutOrder=9999
 	ProfileFrame.Parent=ParentFrame
+
+	-- Linea divisoria (estilo library)
+	local SeparatorFrame=Creator.New("Frame",{
+		Name="xFuxk_Profile_Separator",
+		Size=UDim2.new(1,-14,0,1),
+		Position=UDim2.new(0,7,0,0),
+		BackgroundTransparency=0.85,
+		ThemeTag={BackgroundColor3="Text"},
+		Parent=ProfileFrame,
+	})
 
 	local AvatarImage=Instance.new("ImageLabel")
 	AvatarImage.Name="xFuxk_Avatar_Image"
@@ -14098,23 +14110,26 @@ local function CreateUserProfile(ParentFrame)
 
 	local AvatarStroke=Instance.new("UIStroke")
 	AvatarStroke.Thickness=1.5
+	AvatarStroke.Transparency=0.35
 	AvatarStroke.Color=Color3.fromRGB(255,255,255)
 	AvatarStroke.Parent=AvatarImage
 
-	local DisplayNameLabel=Instance.new("TextLabel")
-	DisplayNameLabel.Name="xFuxk_DisplayName_Text"
-	DisplayNameLabel.Size=UDim2.new(1,-60,0,40)
-	DisplayNameLabel.Position=UDim2.new(0,60,0,10)
-	DisplayNameLabel.BackgroundTransparency=1
-	DisplayNameLabel.BorderSizePixel=0
-	DisplayNameLabel.Font=Enum.Font.GothamBold
-	DisplayNameLabel.TextSize=14
-	DisplayNameLabel.TextColor3=Color3.fromRGB(255,255,255)
-	DisplayNameLabel.TextXAlignment=Enum.TextXAlignment.Left
-	DisplayNameLabel.TextYAlignment=Enum.TextYAlignment.Center
-	DisplayNameLabel.TextWrapped=false
-	DisplayNameLabel.Text=LocalPlayer.DisplayName
-	DisplayNameLabel.Parent=ProfileFrame
+	-- Texto con el estilo de la library
+	local DisplayNameLabel=Creator.New("TextLabel",{
+		Name="xFuxk_DisplayName_Text",
+		Size=UDim2.new(1,-60,0,40),
+		Position=UDim2.new(0,60,0,10),
+		BackgroundTransparency=1,
+		FontFace=Font.new(Creator.Font,Enum.FontWeight.SemiBold),
+		TextSize=15,
+		TextXAlignment=Enum.TextXAlignment.Left,
+		TextYAlignment=Enum.TextYAlignment.Center,
+		TextTruncate="AtEnd",
+		TextWrapped=false,
+		ThemeTag={TextColor3="Text"},
+		Text="@"..LocalPlayer.DisplayName,
+		Parent=ProfileFrame,
+	})
 
 	return ProfileFrame
 end
