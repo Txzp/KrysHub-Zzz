@@ -14114,4 +14114,6 @@ local function CreateUserProfile(ParentFrame)
 	return ProfileFrame
 end
 
-aa.CreateUserProfile=CreateUserProfile
+aa.CreateUserProfile = CreateUserProfile
+
+return aa
