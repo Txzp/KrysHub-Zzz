@@ -14058,16 +14058,14 @@ if aw.Acrylic then
 aq.init()
 end
 
--- [xFuxk UI] Montar perfil de usuario en la parte inferior de la sidebar
+-- [xFuxk UI] Perfil fijo abajo en la sidebar
 local side = b.UIElements.SideBar
 local container = b.UIElements.SideBarContainer
 if side and container then
-	-- Le quitamos 60px a la lista de tabs para hacer espacio al perfil
 	side.Size = UDim2.new(
 		side.Size.X.Scale, side.Size.X.Offset,
 		side.Size.Y.Scale, side.Size.Y.Offset - 60
 	)
-	-- Creamos el perfil anclado al fondo del contenedor de la sidebar
 	aa.CreateUserProfile(container)
 end
 
@@ -14179,14 +14177,6 @@ do
     end
 
     a.CreateUserProfile = CreateUserProfile
-    
-    -- Esta es la línea que hace que el perfil aparezca automáticamente en la barra lateral
-    -- Se ejecuta justo después de definir la función
-    task.spawn(function()
-        repeat task.wait() until a.Window and a.Window.UIElements and a.Window.UIElements.SideBar and a.Window.UIElements.SideBar.Frame
-        a.CreateUserProfile(a.Window.UIElements.SideBar.Frame)
-    end)
-end
 
 
 
