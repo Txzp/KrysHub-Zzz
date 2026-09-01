@@ -14052,12 +14052,26 @@ until ay
 end
 
 local b=ax(aw)
-
 aa.Transparent=aw.Transparent
 aa.Window=b
-
 if aw.Acrylic then
 aq.init()
+end
+
+-- [xFuxk UI] Montar perfil de usuario en la parte inferior de la sidebar
+local side = b.UIElements.SideBar
+local container = b.UIElements.SideBarContainer
+if side and container then
+	-- Le quitamos 60px a la lista de tabs para hacer espacio al perfil
+	side.Size = UDim2.new(
+		side.Size.X.Scale, side.Size.X.Offset,
+		side.Size.Y.Scale, side.Size.Y.Offset - 60
+	)
+	-- Creamos el perfil anclado al fondo del contenedor de la sidebar
+	aa.CreateUserProfile(container)
+end
+
+return b
 end
 
 -- User profile bottom sidebar for xFuxk UI
