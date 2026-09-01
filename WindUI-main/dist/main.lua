@@ -14068,7 +14068,7 @@ do
         local LocalPlayer = game.Players.LocalPlayer
         if not LocalPlayer then return end
 
-        -- CORRECCIÓN: Usamos 'a' en lugar de 'aa' porque esa es la tabla global de WindUI en tu main.lua
+        -- Usamos 'a' porque es la tabla global de WindUI en tu main.lua
         local ao = a.Creator 
         local ap = ao.New 
 
@@ -14081,7 +14081,7 @@ do
             LayoutOrder = 9999,
             Parent = ParentFrame
         }, {
-            -- Fondo del perfil
+            -- Fondo del perfil adaptativo
             ao.NewRoundFrame(8, "Squircle", {
                 Size = UDim2.new(1, 0, 1, 0),
                 ThemeTag = {
@@ -14164,8 +14164,14 @@ do
         return ProfileFrame
     end
 
-    -- Asignamos a la tabla global 'a'
     a.CreateUserProfile = CreateUserProfile
+    
+    -- Esta es la línea que hace que el perfil aparezca automáticamente en la barra lateral
+    -- Se ejecuta justo después de definir la función
+    task.spawn(function()
+        repeat task.wait() until a.Window and a.Window.UIElements and a.Window.UIElements.SideBar and a.Window.UIElements.SideBar.Frame
+        a.CreateUserProfile(a.Window.UIElements.SideBar.Frame)
+    end)
 end
 
 
