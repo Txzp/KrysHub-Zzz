@@ -14094,51 +14094,20 @@ local function CreateUserProfile(ParentFrame)
 		Parent=ProfileFrame,
 	})
 
-	-- Contenedor del avatar (recorta el zoom)
-	local AvatarContainer=Instance.new("Frame")
-	AvatarContainer.Name="xFuxk_Avatar_Container"
-	AvatarContainer.Size=UDim2.new(0,40,0,40)
-	AvatarContainer.Position=UDim2.new(0,10,0,10)
-	AvatarContainer.BackgroundTransparency=1
-	AvatarContainer.BorderSizePixel=0
-	AvatarContainer.ClipsDescendants=true
-	AvatarContainer.Parent=ProfileFrame
-
-	local AvatarCorner=Instance.new("UICorner")
-	AvatarCorner.CornerRadius=UDim.new(1,0)
-	AvatarCorner.Parent=AvatarContainer
-
-	-- Imagen con zoom visual (el redondo no cambia)
-	local AvatarImage=Instance.new("ImageLabel")
-	AvatarImage.Name="xFuxk_Avatar_Image"
-	AvatarImage.Size=UDim2.new(1.45,0,1.45,0)
-	AvatarImage.Position=UDim2.new(0.5,0,0.5,0)
-	AvatarImage.AnchorPoint=Vector2.new(0.5,0.5)
-	AvatarImage.BackgroundTransparency=1
-	AvatarImage.BorderSizePixel=0
-	AvatarImage.ScaleType=Enum.ScaleType.Stretch
-	AvatarImage.Image="https://www.roblox.com/headshot-thumbnail/image?userId="..tostring(LocalPlayer.UserId).."&width=420&height=420&format=png"
-	AvatarImage.Parent=AvatarContainer
-
-	local AvatarStroke=Instance.new("UIStroke")
-	AvatarStroke.Thickness=0.5
-	AvatarStroke.Color=Color3.fromRGB(255,255,255)
-	AvatarStroke.Parent=AvatarContainer
-
-	-- Texto con la fuente y color de la library
+	-- Texto de bienvenida con fuente de la library
 	Creator.New("TextLabel",{
-		Name="xFuxk_DisplayName_Text",
-		Size=UDim2.new(1,-60,0,40),
-		Position=UDim2.new(0,60,0,10),
+		Name="xFuxk_Welcome_Text",
+		Size=UDim2.new(1,-20,0,40),
+		Position=UDim2.new(0,10,0,10),
 		BackgroundTransparency=1,
 		FontFace=Font.new(Creator.Font,Enum.FontWeight.SemiBold),
-		TextSize=15,
+		TextSize=16,
 		TextXAlignment=Enum.TextXAlignment.Left,
 		TextYAlignment=Enum.TextYAlignment.Center,
 		TextTruncate="AtEnd",
 		TextWrapped=false,
 		ThemeTag={TextColor3="Text"},
-		Text="@"..LocalPlayer.DisplayName,
+		Text="Welcome, @"..LocalPlayer.DisplayName,
 		Parent=ProfileFrame,
 	})
 
@@ -14146,5 +14115,3 @@ local function CreateUserProfile(ParentFrame)
 end
 
 aa.CreateUserProfile=CreateUserProfile
-
-return aa
