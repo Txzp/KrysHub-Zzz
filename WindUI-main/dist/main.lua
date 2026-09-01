@@ -14085,7 +14085,7 @@ local function CreateUserProfile(ParentFrame)
 	ProfileFrame.Parent=ParentFrame
 
 	-- Linea divisoria (estilo library)
-	local SeparatorFrame=Creator.New("Frame",{
+	Creator.New("Frame",{
 		Name="xFuxk_Profile_Separator",
 		Size=UDim2.new(1,-14,0,1),
 		Position=UDim2.new(0,7,0,0),
@@ -14094,28 +14094,39 @@ local function CreateUserProfile(ParentFrame)
 		Parent=ProfileFrame,
 	})
 
+	-- Contenedor del avatar (recorta el zoom)
+	local AvatarContainer=Instance.new("Frame")
+	AvatarContainer.Name="xFuxk_Avatar_Container"
+	AvatarContainer.Size=UDim2.new(0,40,0,40)
+	AvatarContainer.Position=UDim2.new(0,10,0,10)
+	AvatarContainer.BackgroundTransparency=1
+	AvatarContainer.BorderSizePixel=0
+	AvatarContainer.ClipsDescendants=true
+	AvatarContainer.Parent=ProfileFrame
+
+	local AvatarCorner=Instance.new("UICorner")
+	AvatarCorner.CornerRadius=UDim.new(1,0)
+	AvatarCorner.Parent=AvatarContainer
+
+	-- Imagen con zoom visual (el redondo no cambia)
 	local AvatarImage=Instance.new("ImageLabel")
 	AvatarImage.Name="xFuxk_Avatar_Image"
-	AvatarImage.Size=UDim2.new(0,40,0,40)
-	AvatarImage.Position=UDim2.new(0,10,0,10)
+	AvatarImage.Size=UDim2.new(1.45,0,1.45,0)
+	AvatarImage.Position=UDim2.new(0.5,0,0.5,0)
+	AvatarImage.AnchorPoint=Vector2.new(0.5,0.5)
 	AvatarImage.BackgroundTransparency=1
 	AvatarImage.BorderSizePixel=0
 	AvatarImage.ScaleType=Enum.ScaleType.Stretch
 	AvatarImage.Image="https://www.roblox.com/headshot-thumbnail/image?userId="..tostring(LocalPlayer.UserId).."&width=420&height=420&format=png"
-	AvatarImage.Parent=ProfileFrame
-
-	local AvatarCorner=Instance.new("UICorner")
-	AvatarCorner.CornerRadius=UDim.new(1,0)
-	AvatarCorner.Parent=AvatarImage
+	AvatarImage.Parent=AvatarContainer
 
 	local AvatarStroke=Instance.new("UIStroke")
-	AvatarStroke.Thickness=1.5
-	AvatarStroke.Transparency=0.35
+	AvatarStroke.Thickness=0.5
 	AvatarStroke.Color=Color3.fromRGB(255,255,255)
-	AvatarStroke.Parent=AvatarImage
+	AvatarStroke.Parent=AvatarContainer
 
-	-- Texto con el estilo de la library
-	local DisplayNameLabel=Creator.New("TextLabel",{
+	-- Texto con la fuente y color de la library
+	Creator.New("TextLabel",{
 		Name="xFuxk_DisplayName_Text",
 		Size=UDim2.new(1,-60,0,40),
 		Position=UDim2.new(0,60,0,10),
