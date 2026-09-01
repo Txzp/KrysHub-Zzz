@@ -14062,11 +14062,11 @@ end
 local side=b.UIElements.SideBar
 local container=b.UIElements.SideBarContainer
 if side and container then
-side.Size=UDim2.new(
-side.Size.X.Scale,side.Size.X.Offset,
-side.Size.Y.Scale,side.Size.Y.Offset-60
-)
-aa.CreateUserProfile(container)
+	side.Size=UDim2.new(
+		side.Size.X.Scale,side.Size.X.Offset,
+		side.Size.Y.Scale,side.Size.Y.Offset-60
+	)
+	aa.CreateUserProfile(container)
 end
 
 return b
@@ -14074,73 +14074,74 @@ end
 
 -- User profile bottom sidebar for xFuxk UI
 do
-  local function CreateUserProfile(ParentFrame)
-	if not ParentFrame then return end
+	local function CreateUserProfile(ParentFrame)
+		if not ParentFrame then return end
 
-	local LocalPlayer = game.Players.LocalPlayer
-	if not LocalPlayer then return end
+		local LocalPlayer = game.Players.LocalPlayer
+		if not LocalPlayer then return end
 
-	local ProfileFrame = Instance.new("Frame")
-	ProfileFrame.Name = "xFuxk_UserProfile_Frame"
-	ProfileFrame.Size = UDim2.new(1, 0, 0, 60)
-	ProfileFrame.AnchorPoint = Vector2.new(0, 1)
-	ProfileFrame.Position = UDim2.new(0, 0, 1, 0)
-	ProfileFrame.BackgroundColor3 = Color3.fromHex("#0f0f0f")
-	ProfileFrame.BackgroundTransparency = 0
-	ProfileFrame.BorderSizePixel = 0
-	ProfileFrame.LayoutOrder = 9999
-	ProfileFrame.Parent = ParentFrame
+		local ProfileFrame = Instance.new("Frame")
+		ProfileFrame.Name = "xFuxk_UserProfile_Frame"
+		ProfileFrame.Size = UDim2.new(1, 0, 0, 60)
+		ProfileFrame.AnchorPoint = Vector2.new(0, 1)
+		ProfileFrame.Position = UDim2.new(0, 0, 1, 0)
+		ProfileFrame.BackgroundColor3 = Color3.fromHex("#0f0f0f")
+		ProfileFrame.BackgroundTransparency = 0
+		ProfileFrame.BorderSizePixel = 0
+		ProfileFrame.LayoutOrder = 9999
+		ProfileFrame.Parent = ParentFrame
 
-	local ProfileCorner = Instance.new("UICorner")
-	ProfileCorner.CornerRadius = UDim.new(0, 8)
-	ProfileCorner.Parent = ProfileFrame
+		local ProfileCorner = Instance.new("UICorner")
+		ProfileCorner.CornerRadius = UDim.new(0, 8)
+		ProfileCorner.Parent = ProfileFrame
 
-	local SeparatorFrame = Instance.new("Frame")
-	SeparatorFrame.Name = "xFuxk_Profile_Separator"
-	SeparatorFrame.Size = UDim2.new(1, -20, 0, 1)
-	SeparatorFrame.Position = UDim2.new(0, 10, 0, 0)
-	SeparatorFrame.BackgroundColor3 = Color3.fromHex("#333333")
-	SeparatorFrame.BackgroundTransparency = 0.5
-	SeparatorFrame.BorderSizePixel = 0
-	SeparatorFrame.Parent = ProfileFrame
+		local SeparatorFrame = Instance.new("Frame")
+		SeparatorFrame.Name = "xFuxk_Profile_Separator"
+		SeparatorFrame.Size = UDim2.new(1, -20, 0, 1)
+		SeparatorFrame.Position = UDim2.new(0, 10, 0, 0)
+		SeparatorFrame.BackgroundColor3 = Color3.fromHex("#333333")
+		SeparatorFrame.BackgroundTransparency = 0.5
+		SeparatorFrame.BorderSizePixel = 0
+		SeparatorFrame.Parent = ProfileFrame
 
-	local AvatarImage = Instance.new("ImageLabel")
-	AvatarImage.Name = "xFuxk_Avatar_Image"
-	AvatarImage.Size = UDim2.new(0, 40, 0, 40)
-	AvatarImage.Position = UDim2.new(0, 10, 0, 10)
-	AvatarImage.BackgroundTransparency = 1
-	AvatarImage.BorderSizePixel = 0
-	AvatarImage.ScaleType = Enum.ScaleType.Stretch
-	AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(LocalPlayer.UserId) .. "&width=420&height=420&format=png"
-	AvatarImage.Parent = ProfileFrame
+		local AvatarImage = Instance.new("ImageLabel")
+		AvatarImage.Name = "xFuxk_Avatar_Image"
+		AvatarImage.Size = UDim2.new(0, 40, 0, 40)
+		AvatarImage.Position = UDim2.new(0, 10, 0, 10)
+		AvatarImage.BackgroundTransparency = 1
+		AvatarImage.BorderSizePixel = 0
+		AvatarImage.ScaleType = Enum.ScaleType.Stretch
+		AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. tostring(LocalPlayer.UserId) .. "&width=420&height=420&format=png"
+		AvatarImage.Parent = ProfileFrame
 
-	local AvatarCorner = Instance.new("UICorner")
-	AvatarCorner.CornerRadius = UDim.new(1, 0)
-	AvatarCorner.Parent = AvatarImage
+		local AvatarCorner = Instance.new("UICorner")
+		AvatarCorner.CornerRadius = UDim.new(1, 0)
+		AvatarCorner.Parent = AvatarImage
 
-	local AvatarStroke = Instance.new("UIStroke")
-	AvatarStroke.Thickness = 2
-	AvatarStroke.Color = Color3.fromRGB(255, 255, 255)
-	AvatarStroke.Parent = AvatarImage
+		local AvatarStroke = Instance.new("UIStroke")
+		AvatarStroke.Thickness = 2
+		AvatarStroke.Color = Color3.fromRGB(255, 255, 255)
+		AvatarStroke.Parent = AvatarImage
 
-	local UsernameLabel = Instance.new("TextLabel")
-	UsernameLabel.Name = "xFuxk_Username_Text"
-	UsernameLabel.Size = UDim2.new(1, -70, 0, 40)
-	UsernameLabel.Position = UDim2.new(0, 60, 0, 10)
-	UsernameLabel.BackgroundTransparency = 1
-	UsernameLabel.BorderSizePixel = 0
-	UsernameLabel.Font = Enum.Font.GothamBold
-	UsernameLabel.TextSize = 14
-	UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	UsernameLabel.TextYAlignment = Enum.TextYAlignment.Center
-	UsernameLabel.TextWrapped = false
-	UsernameLabel.Text = "Username: " .. LocalPlayer.Name .. " (@xFuxk)"
-	UsernameLabel.Parent = ProfileFrame
+		local UsernameLabel = Instance.new("TextLabel")
+		UsernameLabel.Name = "xFuxk_Username_Text"
+		UsernameLabel.Size = UDim2.new(1, -70, 0, 40)
+		UsernameLabel.Position = UDim2.new(0, 60, 0, 10)
+		UsernameLabel.BackgroundTransparency = 1
+		UsernameLabel.BorderSizePixel = 0
+		UsernameLabel.Font = Enum.Font.GothamBold
+		UsernameLabel.TextSize = 14
+		UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		UsernameLabel.TextYAlignment = Enum.TextYAlignment.Center
+		UsernameLabel.TextWrapped = false
+		UsernameLabel.Text = "Username: " .. LocalPlayer.Name .. " (@xFuxk)"
+		UsernameLabel.Parent = ProfileFrame
 
-	return ProfileFrame
+		return ProfileFrame
+	end
+
+	aa.CreateUserProfile = CreateUserProfile
 end
-
-aa.CreateUserProfile = CreateUserProfile
 
 return aa
