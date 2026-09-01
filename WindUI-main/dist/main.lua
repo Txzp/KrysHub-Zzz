@@ -14176,19 +14176,6 @@ do
         return ProfileFrame
     end
 
-    a.CreateUserProfile = CreateUserProfile
-
-
-
-
-
-
-
-
-
-
-
-return b
-end
+aa.CreateUserProfile = CreateUserProfile
 
 return aa
