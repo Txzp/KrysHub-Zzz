@@ -14059,14 +14059,14 @@ aq.init()
 end
 
 -- [xFuxk UI] Perfil fijo abajo en la sidebar
-local side = b.UIElements.SideBar
-local container = b.UIElements.SideBarContainer
+local side=b.UIElements.SideBar
+local container=b.UIElements.SideBarContainer
 if side and container then
-	side.Size = UDim2.new(
-		side.Size.X.Scale, side.Size.X.Offset,
-		side.Size.Y.Scale, side.Size.Y.Offset - 60
-	)
-	aa.CreateUserProfile(container)
+side.Size=UDim2.new(
+side.Size.X.Scale,side.Size.X.Offset,
+side.Size.Y.Scale,side.Size.Y.Offset-60
+)
+aa.CreateUserProfile(container)
 end
 
 return b
@@ -14173,9 +14173,10 @@ do
             })
         })
 
-        return ProfileFrame
-    end
+    return ProfileFrame
+end
 
 aa.CreateUserProfile = CreateUserProfile
+end
 
 return aa
