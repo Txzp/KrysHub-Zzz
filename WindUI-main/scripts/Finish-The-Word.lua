@@ -1,1002 +1,3067 @@
--- ============================================================
--- xFuxk | Finish The Word! | RANKED — v2.0 KILLER EDITION
--- Massive dictionary + Killer Mode + Zero-Loss
--- ============================================================
-
--- ============================================================
--- EXECUTOR ALIASES
--- ============================================================
-local _gethui       = gethui or get_hui or get_hidden_gui or get_hidden_ui or gethiddengui
-local _writefile    = writefile or write_file
-local _readfile     = readfile or read_file
-local _isfile       = isfile or is_file or file_exists
-local _makefolder   = makefolder or make_folder or createfolder
-local _isfolder     = isfolder or is_folder or folder_exists
-
--- ============================================================
--- GAME CHECK
--- ============================================================
-local RS = game:GetService("ReplicatedStorage")
-local Services = RS:WaitForChild("Services", 20)
-if not Services or not Services:FindFirstChild("Communication") then return end
-
--- ============================================================
--- SERVICES
--- ============================================================
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local player = Players.LocalPlayer
-
-local Comm = Services:WaitForChild("Communication")
-local event = require(Comm:WaitForChild("event"))
-
--- ============================================================
--- THEME
--- ============================================================
-local THEME = {
-    bg = Color3.fromRGB(7, 7, 9),
-    accent = Color3.fromRGB(120, 200, 255),
-    green = Color3.fromRGB(110, 235, 150),
-    orange = Color3.fromRGB(255, 175, 90),
-    red = Color3.fromRGB(255, 110, 110),
-    killer = Color3.fromRGB(255, 80, 80),
-    text = Color3.fromRGB(245, 247, 250),
-    textDim = Color3.fromRGB(175, 185, 200),
-    rowBg = Color3.fromRGB(16, 16, 21),
-    btnIdle = Color3.fromRGB(28, 28, 34),
-    btnHover = Color3.fromRGB(48, 48, 58),
-    closeIdle = Color3.fromRGB(165, 35, 40),
-    closeHover = Color3.fromRGB(205, 55, 60),
-    switchOff = Color3.fromRGB(48, 48, 56),
-    white = Color3.fromRGB(255, 255, 255),
-}
-
--- ============================================================
--- HUB STATE + DATA SAVE
--- ============================================================
-local State = {
-    autoAnswer = false,
-    autoChoose = false,
-    killerMode = false,  -- NEW: Killer Mode toggle
-    speed = "human",
-    used = {},
-    blacklist = {},
-    learnedValid = {},
-    learnedInvalid = {},
-    roundToken = 0,
-    lastSubmitted = nil,
-    lastSubmitTime = 0,
-    retryPending = false,
-    chain = 0,
-}
-
-local SPEEDS = {
-    human = {keyMin = 0.09, keyMax = 0.22, pauseChance = 0.12, pauseMin = 0.12, pauseMax = 0.40, thinkMin = 0.5, thinkMax = 1.6},
-    fast  = {keyMin = 0.02, keyMax = 0.05, pauseChance = 0.03, pauseMin = 0.05, pauseMax = 0.12, thinkMin = 0.2, thinkMax = 0.45},
-}
-
--- ============================================================
--- KILLER LETTERS (hard endings to trap opponents)
--- ============================================================
-local KILLER_SCORES = {
-    x = 10, z = 9, q = 9, j = 8, v = 6, k = 5,
-    b = 4, f = 3, w = 3, y = 2, g = 2, p = 2
-}
-
-local CONFIG_FILE = "xFuxk_FTW_Config.json"
-local WORDDB_FILE = "xFuxk_FTW_WordDB.json"
-
-local function saveConfig()
-    if not _writefile then return end
-    pcall(function()
-        _writefile(CONFIG_FILE, HttpService:JSONEncode({
-            autoAnswer = State.autoAnswer,
-            autoChoose = State.autoChoose,
-            killerMode = State.killerMode,
-            speed = State.speed,
-        }))
-    end)
-end
-
-local function loadConfig()
-    if _isfile and _isfile(CONFIG_FILE) and _readfile then
-        pcall(function()
-            local d = HttpService:JSONDecode(_readfile(CONFIG_FILE))
-            if type(d) == "table" then
-                State.autoAnswer = d.autoAnswer == true
-                State.autoChoose = d.autoChoose == true
-                State.killerMode = d.killerMode == true
-                State.speed = SPEEDS[d.speed] and d.speed or "human"
-            end
-        end)
-    end
-end
-
-local HARDCODED_BAD = {
-    apeling = true, ayelp = true, cestoids = true, ehrman = true,
-    gyeld = true, gyle = true, ichebu = true, ingene = true,
-    ional = true, labrador = true, mnemic = true, oneill = true,
-    onerously = true, ptr = true, tiewig = true, llaretas = true,
-    digital = true, groupoids = true, zelotypie = true, muffineers = true,
-}
-
-local function cleanWord(w)
-    if type(w) ~= "string" then return nil end
-    local low = w:lower()
-    if not low:match("^%a+$") then return nil end
-    if #low < 3 or #low > 10 then return nil end
-    if HARDCODED_BAD[low] then return nil end
-    if low:match("son$") and #low > 6 then return nil end
-    return low
-end
-
-local function loadWordDB()
-    if _isfile and _isfile(WORDDB_FILE) and _readfile then
-        pcall(function()
-            local d = HttpService:JSONDecode(_readfile(WORDDB_FILE))
-            if type(d) == "table" then
-                if type(d.valid) == "table" then
-                    for _, w in ipairs(d.valid) do
-                        local c = cleanWord(w)
-                        if c then State.learnedValid[c] = true end
-                    end
+-- [[ BloxScript Cloud Live Telemetry ]]
+task.spawn(
+    function()
+        pcall(
+            function()
+                local req =
+                    (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or
+                    request
+                if not req then
+                    return
                 end
-                if type(d.invalid) == "table" then
-                    for _, w in ipairs(d.invalid) do
-                        local c = cleanWord(w)
-                        if c then State.learnedInvalid[c] = true end
-                    end
+                while true do
+                    pcall(
+                        function()
+                            req(
+                                {
+                                    Url = "https://bloxscript-cloud.vercel.app/api/v1/telemetry/ping/fdmTYtvsoXp0",
+                                    Method = "POST"
+                                }
+                            )
+                        end
+                    )
+                    task.wait(25)
                 end
             end
-        end)
+        )
+    end
+)
+local l = true
+if false then
+local s = {}
+s.AppName = "EliteAuth PRO"
+s.Subtitle = "Enter your key to continue"
+s.ButtonText = "Enter"
+s.PlaceholderText = "Put your key here"
+s.LoadingText = "Checking Key..."
+s.SuccessText = "Correct Key"
+s.ErrorText = "Invalid Key"
+s.Secret = "7c0b0ece885a8594890d56333d3e5225"
+s.Version = "1.5"
+s.OwnerId = "vD3rJw8nUkYxX3PkN99hKTe0AEp1"
+s.ScriptId = "SCR_FC30F602963B"
+s.DiscordUrl = "https://discord.gg/FS5DJBd6sB"
+s.WorkInkUrl = ""
+s.LinkvertiseUrl = ""
+s.CustomGetKeyUrl = "https://discord.gg/FS5DJBd6sB"
+local X = true
+local d = false
+local w = false
+local Q = true
+local q = nil
+if gethui then
+    local s, X = pcall(gethui)
+    if s and X then
+        q = X
     end
 end
-
-local dbDirty = false
-local function saveWordDB()
-    if not _writefile then return end
-    pcall(function()
-        local v, i = {}, {}
-        for w in pairs(State.learnedValid) do v[#v+1] = w end
-        for w in pairs(State.learnedInvalid) do i[#i+1] = w end
-        table.sort(v)
-        table.sort(i)
-        _writefile(WORDDB_FILE, HttpService:JSONEncode({valid = v, invalid = i}))
-    end)
-end
-
-loadConfig()
-loadWordDB()
-
-task.spawn(function()
-    while true do
-        task.wait(5)
-        if dbDirty then
-            dbDirty = false
-            saveWordDB()
+if not q then
+    local s, X =
+        pcall(
+        function()
+            return game:GetService("CoreGui")
         end
-    end
-end)
-
--- ============================================================
--- UI SETUP
--- ============================================================
-local function getHolder()
-    local ok, h = pcall(function() return (_gethui and _gethui()) or game:GetService("CoreGui") end)
-    if ok and h then return h end
-    return player:WaitForChild("PlayerGui")
-end
-
-local holder = getHolder()
-for _, child in ipairs(holder:GetChildren()) do
-    if child:IsA("ScreenGui") and child.Name == "xFuxkRanked" then
-        child:Destroy()
+    )
+    if s and X then
+        q = X
     end
 end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "xFuxkRanked"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999
-ScreenGui.IgnoreGuiInset = false
-ScreenGui.Enabled = true
-pcall(function() ScreenGui.Parent = player:WaitForChild("PlayerGui") end)
-
-if not ScreenGui.Parent then
-    pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
+if not q then
+    pcall(
+        function()
+            local s = (game:GetService("Players")).LocalPlayer or (game:GetService("Players")).PlayerAdded:Wait()
+            q = s:WaitForChild("PlayerGui")
+        end
+    )
 end
-
--- ============================================================
--- MAIN FRAME
--- ============================================================
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.new(0, 328, 0, 233)  -- Aumentado para el killer toggle
-Main.Position = UDim2.new(0.02, 0, 0.1, 0)
-Main.BackgroundColor3 = THEME.bg
-Main.BackgroundTransparency = 0.08
-Main.BorderSizePixel = 0
-Main.ClipsDescendants = true
-Main.Parent = ScreenGui
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = THEME.accent
-MainStroke.Transparency = 0.45
-MainStroke.Thickness = 1.3
-MainStroke.Parent = Main
-
--- ============================================================
--- PARTICLES
--- ============================================================
-local Particles = Instance.new("Frame")
-Particles.Name = "Particles"
-Particles.Size = UDim2.fromScale(1, 1)
-Particles.BackgroundTransparency = 1
-Particles.BorderSizePixel = 0
-Particles.ClipsDescendants = true
-Particles.Parent = Main
-
-local function spawnDot()
-    local dot = Instance.new("Frame")
-    dot.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
-    dot.Position = UDim2.new(math.random() * 0.95, 0, -0.06, 0)
-    dot.BackgroundColor3 = THEME.white
-    dot.BackgroundTransparency = math.random(25, 55) / 100
-    dot.BorderSizePixel = 0
-    dot.Parent = Particles
-    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-
-    local tween = TweenService:Create(dot,
-        TweenInfo.new(math.random(5, 10), Enum.EasingStyle.Linear),
-        { Position = UDim2.new(math.random() * 0.9 + 0.05, 0, 1.1, 0) })
-    tween:Play()
-    tween.Completed:Connect(function()
-        dot:Destroy()
-        if Particles.Parent then spawnDot() end
-    end)
-end
-
-for i = 1, 28 do
-    task.delay(i * 0.18, function()
-        if Particles.Parent then spawnDot() end
-    end)
-end
-
--- ============================================================
--- TOPBAR
--- ============================================================
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 42)
-TopBar.BackgroundTransparency = 1
-TopBar.BorderSizePixel = 0
-TopBar.Parent = Main
-
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, -80, 1, 0)
-TitleLabel.Position = UDim2.new(0, 14, 0, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "xFuxk | Finish The Word! | Ranked"
-TitleLabel.TextColor3 = THEME.text
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 14
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.Parent = TopBar
-
-local Divider = Instance.new("Frame")
-Divider.Size = UDim2.new(1, -16, 0, 1)
-Divider.Position = UDim2.new(0, 8, 1, -1)
-Divider.BackgroundColor3 = THEME.white
-Divider.BackgroundTransparency = 0.55
-Divider.BorderSizePixel = 0
-Divider.Parent = TopBar
-
--- Header buttons
-local function iconButton(name, x, isClose, drawFn)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Size = UDim2.new(0, 26, 0, 26)
-    btn.Position = UDim2.new(1, x, 0.5, -13)
-    btn.BackgroundColor3 = isClose and THEME.closeIdle or THEME.btnIdle
-    btn.BackgroundTransparency = 0.15
-    btn.Text = ""
-    btn.AutoButtonColor = false
-    btn.BorderSizePixel = 0
-    btn.Parent = TopBar
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(isClose and 1 or 0, isClose and 0 or 7)
-
-    local icon = Instance.new("Frame")
-    icon.Name = "Icon"
-    icon.Size = UDim2.new(0, 11, 0, 11)
-    icon.Position = UDim2.new(0.5, -5.5, 0.5, -5.5)
-    icon.BackgroundTransparency = 1
-    icon.BorderSizePixel = 0
-    icon.Parent = btn
-    drawFn(icon)
-
-    local hoverIn = TweenService:Create(btn, TweenInfo.new(0.14), {
-        BackgroundColor3 = isClose and THEME.closeHover or THEME.btnHover,
-        BackgroundTransparency = 0,
-    })
-    local hoverOut = TweenService:Create(btn, TweenInfo.new(0.14), {
-        BackgroundColor3 = isClose and THEME.closeIdle or THEME.btnIdle,
-        BackgroundTransparency = 0.15,
-    })
-    local press = TweenService:Create(icon, TweenInfo.new(0.08), {
-        Size = UDim2.new(0, 9, 0, 9), Position = UDim2.new(0.5, -4.5, 0.5, -4.5),
-    })
-    local release = TweenService:Create(icon, TweenInfo.new(0.16, Enum.EasingStyle.Back), {
-        Size = UDim2.new(0, 11, 0, 11), Position = UDim2.new(0.5, -5.5, 0.5, -5.5),
-    })
-
-    btn.MouseEnter:Connect(function() hoverIn:Play() end)
-    btn.MouseLeave:Connect(function() hoverOut:Play() end)
-    btn.MouseButton1Down:Connect(function() press:Play() end)
-    btn.MouseButton1Up:Connect(function() release:Play() end)
-    return btn
-end
-
-local MinBtn = iconButton("MinBtn", -64, false, function(icon)
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(0.9, 0, 0, 2)
-    line.Position = UDim2.new(0.05, 0, 0.78, -1)
-    line.BackgroundColor3 = THEME.text
-    line.BorderSizePixel = 0
-    line.Parent = icon
-    Instance.new("UICorner", line).CornerRadius = UDim.new(1, 0)
-end)
-
-local CloseBtn = iconButton("CloseBtn", -34, true, function(icon)
-    for _, rot in ipairs({45, -45}) do
-        local l = Instance.new("Frame")
-        l.Size = UDim2.new(1, 0, 0, 2)
-        l.Position = UDim2.new(0, 0, 0.5, -1)
-        l.Rotation = rot
-        l.BackgroundColor3 = THEME.text
-        l.BorderSizePixel = 0
-        l.Parent = icon
-        Instance.new("UICorner", l).CornerRadius = UDim.new(1, 0)
+local D = game:GetService("HttpService")
+local O = nil
+pcall(
+    function()
+        O = game:GetService("RbxAnalyticsService")
     end
-end)
-
--- ============================================================
--- CONTENT
--- ============================================================
-local Content = Instance.new("Frame")
-Content.Name = "Content"
-Content.Size = UDim2.new(1, 0, 1, -42)
-Content.Position = UDim2.new(0, 0, 0, 42)
-Content.BackgroundTransparency = 1
-Content.BorderSizePixel = 0
-Content.Parent = Main
-
-local SubRow = Instance.new("Frame")
-SubRow.Size = UDim2.new(1, -20, 0, 16)
-SubRow.Position = UDim2.new(0, 14, 0, 4)
-SubRow.BackgroundTransparency = 1
-SubRow.Parent = Content
-
-local SubLbl = Instance.new("TextLabel")
-SubLbl.Size = UDim2.new(0.55, 0, 1, 0)
-SubLbl.BackgroundTransparency = 1
-SubLbl.Text = "Ranked v2.0 • KILLER"
-SubLbl.TextColor3 = THEME.killer
-SubLbl.Font = Enum.Font.GothamBold
-SubLbl.TextSize = 10
-SubLbl.TextXAlignment = Enum.TextXAlignment.Left
-SubLbl.Parent = SubRow
-
-local ByLabel = Instance.new("TextLabel")
-ByLabel.Size = UDim2.new(0.45, 0, 1, 0)
-ByLabel.Position = UDim2.new(0.55, 0, 0, 0)
-ByLabel.BackgroundTransparency = 1
-ByLabel.Text = "By xFuxk"
-ByLabel.TextColor3 = THEME.text
-ByLabel.TextTransparency = 0.2
-ByLabel.Font = Enum.Font.Gotham
-ByLabel.TextSize = 10
-ByLabel.TextXAlignment = Enum.TextXAlignment.Right
-ByLabel.Parent = SubRow
-
-local Body = Instance.new("Frame")
-Body.Name = "Body"
-Body.Size = UDim2.new(1, -20, 1, -52)
-Body.Position = UDim2.new(0, 10, 0, 26)
-Body.BackgroundTransparency = 1
-Body.BorderSizePixel = 0
-Body.Parent = Content
-
-local BodyList = Instance.new("UIListLayout")
-BodyList.Padding = UDim.new(0, 6)
-BodyList.SortOrder = Enum.SortOrder.LayoutOrder
-BodyList.Parent = Body
-
-local StatusLbl = Instance.new("TextLabel")
-StatusLbl.Name = "Status"
-StatusLbl.Size = UDim2.new(1, -20, 0, 14)
-StatusLbl.Position = UDim2.new(0, 10, 1, -16)
-StatusLbl.BackgroundTransparency = 1
-StatusLbl.Text = "Ready"
-StatusLbl.TextColor3 = THEME.textDim
-StatusLbl.Font = Enum.Font.Gotham
-StatusLbl.TextSize = 10
-StatusLbl.TextXAlignment = Enum.TextXAlignment.Left
-StatusLbl.Parent = Content
-
-local function setStatus(text, color)
-    pcall(function()
-        StatusLbl.Text = text
-        StatusLbl.TextColor3 = color or THEME.textDim
-    end)
-end
-
--- Custom controls
-local function makeRow(title)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 30)
-    row.BackgroundColor3 = THEME.rowBg
-    row.BackgroundTransparency = 0.25
-    row.BorderSizePixel = 0
-    row.Parent = Body
-    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
-
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -60, 1, 0)
-    lbl.Position = UDim2.new(0, 10, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = title
-    lbl.TextColor3 = THEME.text
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 12
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = row
-    return row
-end
-
-local function makeToggle(title, default, onChanged, isKiller)
-    local row = makeRow(title)
-
-    local switch = Instance.new("TextButton")
-    switch.Size = UDim2.new(0, 34, 0, 18)
-    switch.Position = UDim2.new(1, -44, 0.5, -9)
-    switch.BackgroundColor3 = THEME.switchOff
-    switch.BorderSizePixel = 0
-    switch.Text = ""
-    switch.AutoButtonColor = false
-    switch.Parent = row
-    Instance.new("UICorner", switch).CornerRadius = UDim.new(0, 9)
-
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 12, 0, 12)
-    knob.Position = UDim2.new(0, 3, 0.5, -6)
-    knob.BackgroundColor3 = THEME.white
-    knob.BorderSizePixel = 0
-    knob.Parent = switch
-    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-    local state = default
-
-    local function apply(anim)
-        local on = state
-        local info = anim and TweenInfo.new(0.18, Enum.EasingStyle.Quad) or TweenInfo.new(0)
-        local color = isKiller and (on and THEME.killer or THEME.switchOff) or (on and THEME.accent or THEME.switchOff)
-        TweenService:Create(switch, info, {
-            BackgroundColor3 = color
-        }):Play()
-        TweenService:Create(knob, info, {
-            Position = on and UDim2.new(0, 19, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
-        }):Play()
+)
+local function r(s, X)
+    local d = {}
+    for w = 1, #s, 1 do
+        d[w] = string.char(bit32.bxor(string.byte(s, w), X))
     end
-
-    apply(false)
-
-    switch.MouseButton1Click:Connect(function()
-        state = not state
-        apply(true)
-        onChanged(state)
-    end)
-
-    return { Get = function() return state end }
+    return table.concat(d)
 end
-
-local function makeDropdown(title, options, default, onChanged)
-    local row = makeRow(title)
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 84, 0, 20)
-    btn.Position = UDim2.new(1, -94, 0.5, -10)
-    btn.BackgroundColor3 = THEME.btnIdle
-    btn.BackgroundTransparency = 0.1
-    btn.BorderSizePixel = 0
-    btn.Text = ""
-    btn.AutoButtonColor = false
-    btn.Parent = row
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-    local valLbl = Instance.new("TextLabel")
-    valLbl.Size = UDim2.new(1, -22, 1, 0)
-    valLbl.Position = UDim2.new(0, 8, 0, 0)
-    valLbl.BackgroundTransparency = 1
-    valLbl.Text = default
-    valLbl.TextColor3 = THEME.accent
-    valLbl.Font = Enum.Font.GothamBold
-    valLbl.TextSize = 11
-    valLbl.TextXAlignment = Enum.TextXAlignment.Left
-    valLbl.Parent = btn
-
-    local chev = Instance.new("Frame")
-    chev.Size = UDim2.new(0, 8, 0, 8)
-    chev.Position = UDim2.new(1, -16, 0.5, -4)
-    chev.BackgroundTransparency = 1
-    chev.Parent = btn
-    for i, rot in ipairs({45, -45}) do
-        local l = Instance.new("Frame")
-        l.Size = UDim2.new(0, 5, 0, 1.5)
-        l.Position = i == 1 and UDim2.new(0, 0, 0, 3) or UDim2.new(0, 3.5, 0, 3)
-        l.Rotation = rot
-        l.BackgroundColor3 = THEME.textDim
-        l.BorderSizePixel = 0
-        l.Parent = chev
-    end
-
-    local panel = Instance.new("Frame")
-    panel.Size = UDim2.new(0, 84, 0, #options * 22 + 6)
-    panel.Position = UDim2.new(1, -94, 1, 2)
-    panel.BackgroundColor3 = THEME.btnIdle
-    panel.BorderSizePixel = 0
-    panel.Visible = false
-    panel.ZIndex = 6
-    panel.Parent = row
-    Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 6)
-
-    local pList = Instance.new("UIListLayout")
-    pList.Padding = UDim.new(0, 2)
-    pList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    pList.Parent = panel
-
-    for _, opt in ipairs(options) do
-        local ob = Instance.new("TextButton")
-        ob.Size = UDim2.new(1, -8, 0, 20)
-        ob.BackgroundColor3 = Color3.fromRGB(38, 38, 46)
-        ob.BackgroundTransparency = 0.4
-        ob.BorderSizePixel = 0
-        ob.Text = opt
-        ob.TextColor3 = THEME.text
-        ob.Font = Enum.Font.Gotham
-        ob.TextSize = 11
-        ob.AutoButtonColor = false
-        ob.Parent = panel
-        Instance.new("UICorner", ob).CornerRadius = UDim.new(0, 5)
-
-        ob.MouseButton1Click:Connect(function()
-            valLbl.Text = opt
-            panel.Visible = false
-            onChanged(opt)
-        end)
-    end
-
-    btn.MouseButton1Click:Connect(function()
-        panel.Visible = not panel.Visible
-    end)
+local y = math.random(1, 127)
+local o = r(s.Secret, y)
+local N = function()
+    return r(o, y)
 end
-
--- Build controls
-makeToggle("Auto Answer", State.autoAnswer, function(v)
-    State.autoAnswer = v
-    saveConfig()
-    setStatus("Auto Answer " .. (v and "ON" or "OFF"), v and THEME.green or THEME.textDim)
-end)
-
-makeToggle("Auto Choose", State.autoChoose, function(v)
-    State.autoChoose = v
-    saveConfig()
-end)
-
-makeToggle("Killer Mode", State.killerMode, function(v)
-    State.killerMode = v
-    saveConfig()
-    setStatus(v and "⚔ KILLER MODE ACTIVE" or "Safe Mode", v and THEME.killer or THEME.textDim)
-end, true)
-
-makeDropdown("Typing Speed", {"human", "fast"}, State.speed, function(v)
-    State.speed = v
-    saveConfig()
-end)
-
--- Minimize/Close/Drag behavior
-local minimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    Content.Visible = not minimized
-    StatusLbl.Visible = not minimized
-    TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = minimized and UDim2.new(0, 328, 0, 42) or UDim2.new(0, 328, 0, 233)
-    }):Play()
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = Main.Position + UDim2.new(0, 164, 0, 116),
-    }):Play()
-    task.delay(0.22, function() ScreenGui:Destroy() end)
-end)
-
-local dragging, dragStart, startPos = false, nil, nil
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Main.Position
-    end
-end)
-TopBar.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local d = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
-    end
-end)
-
--- Entrance animation
-Main.Position = UDim2.new(0.02, 0, 0.07, 0)
-Main.BackgroundTransparency = 1
-MainStroke.Transparency = 1
-TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    Position = UDim2.new(0.02, 0, 0.1, 0),
-    BackgroundTransparency = 0.08,
-}):Play()
-TweenService:Create(MainStroke, TweenInfo.new(0.3), { Transparency = 0.45 }):Play()
-
--- ============================================================
--- DICTIONARY SYSTEM (Massive 2000+ words)
--- ============================================================
-local CommonBuckets = {}
-local FreqRank = {}
-
--- FALLBACK + words-simple.lua words
-local FALLBACK = {"apple","about","arrow","bag","ball","bear","bird","boat","book","bread","cat","cake","car","chair","cheese","child","city","cloud","coin","corn","dog","door","dream","drum","dust","eagle","earth","eat","eight","end","easy","early","farm","fire","fish","flag","flower","forest","fox","frog","game","garden","gate","ghost","goat","gold","grape","grass","gym","gymnast","happy","hat","hill","home","horse","house","ice","igloo","ink","iron","island","jam","jelly","jewel","jungle","juice","kite","kiwi","king","kitchen","lamp","leaf","lemon","lion","lizard","lake","map","melon","milk","moon","mouse","music","nest","night","nose","note","ocean","olive","onion","orange","owl","panda","paper","pear","pen","piano","pig","pizza","plane","plum","pond","queen","quilt","quiz","rabbit","rain","river","road","rock","rose","salt","sand","seed","sheep","ship","shoe","snow","soap","sock","star","stone","sun","table","tiger","toast","tree","truck","turtle","umbrella","unicorn","unit","van","vase","violin","violet","wagon","water","whale","wheel","wind","window","wolf","wood","yarn","yellow","zebra","zoo"}
-
-local function addCommon(w, rank)
-    if #w < 3 or #w > 10 then return end
-    if HARDCODED_BAD[w] then return end
-    local c = w:sub(1,1)
-    CommonBuckets[c] = CommonBuckets[c] or {}
-    FreqRank[w] = rank
-    table.insert(CommonBuckets[c], w)
-end
-
--- Sync load fallback
-local rank0 = 0
-for _, w in ipairs(FALLBACK) do
-    rank0 = rank0 + 1
-    addCommon(w, rank0)
-end
-
--- Async load massive dictionary
-task.spawn(function()
-    local ok, raw = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/Txzp/KrysHub-Zzz/refs/heads/main/words-simple.lua")
-    end)
-    
-    if ok and raw and #raw > 5000 then
-        local count = 0
-        for line in raw:gmatch("[^\r\n]+") do
-            local w = line:lower():gsub("[^a-z]", "")
-            if w == line:lower() and #w >= 3 and #w <= 10 and not HARDCODED_BAD[w] then
-                rank0 = rank0 + 1
-                addCommon(w, rank0)
-                count = count + 1
+local Z =
+    (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request or
+    (function(s)
+        local X, d =
+            pcall(
+            function()
+                return game:HttpGet(s.Url)
             end
+        )
+        if X and d then
+            return {StatusCode = 200, Body = d}
         end
-        for _, pool in pairs(CommonBuckets) do table.sort(pool) end
-        setStatus("Loaded " .. count .. " words | Killer Ready", THEME.green)
+        return {StatusCode = 500, Body = "No request function supported on this executor"}
+    end)
+local function m(s)
+    local X = {
+        Url = s.Url,
+        url = s.Url,
+        Method = s.Method or "GET",
+        method = s.Method or "GET",
+        Headers = s.Headers or {},
+        headers = s.Headers or {}
+    }
+    if s.Body and s.Body ~= "" then
+        X.Body = s.Body
+        X.body = s.Body
     end
-end)
-
-for _, pool in pairs(CommonBuckets) do table.sort(pool) end
-
-function getSpeed()
-    return SPEEDS[State.speed] or SPEEDS.human
+    return Z(X)
 end
-
-local function isValidWord(w)
-    if State.used[w] or State.blacklist[w] or State.learnedInvalid[w] then return false end
-    if HARDCODED_BAD[w] then return false end
-    return true
+local function e(s)
+    if type(s) ~= "table" then
+        return {success = false, message = tostring(s)}
+    end
+    local X = s.StatusCode or s.status or s.status_code or 200
+    local d = s.Body or s.body or s.response or ""
+    return {success = (X == 200), statusCode = X, body = d}
 end
-
-local function lowerBound(pool, prefix)
-    local lo, hi = 1, #pool + 1
-    while lo < hi do
-        local mid = math.floor((lo + hi) / 2)
-        if pool[mid] < prefix then
-            lo = mid + 1
+local l = false
+local W = "UnknownPlayer"
+pcall(
+    function()
+        if gethwid then
+            W = tostring(gethwid())
+        elseif O then
+            W = tostring(O:GetClientId())
         else
-            hi = mid
+            W = tostring((game:GetService("Players")).LocalPlayer.UserId)
         end
     end
-    return lo
+)
+local c = game:GetService("TweenService")
+local M = game:GetService("UserInputService")
+local L = Instance.new("ScreenGui")
+local a = Instance.new("Frame")
+local g = Instance.new("UICorner")
+local K = Instance.new("UIStroke")
+local I = Instance.new("UIGradient")
+local T = Instance.new("Frame")
+local x = nil
+local V = Instance.new("TextLabel")
+local S = Instance.new("TextLabel")
+local z = Instance.new("Frame")
+local F = Instance.new("UICorner")
+local j = Instance.new("UIStroke")
+local k = Instance.new("TextBox")
+local P = Instance.new("UIPadding")
+local E = Instance.new("TextButton")
+local H = Instance.new("UICorner")
+local i = Instance.new("UIGradient")
+local U = Instance.new("UIStroke")
+local J, v, p
+if d then
+    J = Instance.new("TextButton")
+    v = Instance.new("UICorner")
+    p = Instance.new("UIStroke")
 end
-
-local function searchCommon(prefix, limit)
-    local pool = CommonBuckets[prefix:sub(1,1)]
-    if not pool or #pool == 0 then return {} end
-    local plen = #prefix
-    local idx = lowerBound(pool, prefix)
-    local out = {}
-    while idx <= #pool and #out < limit do
-        local w = pool[idx]
-        if w:sub(1, plen) ~= prefix then break end
-        if #w > plen and isValidWord(w) then
-            out[#out+1] = w
+local Y, u, A
+if Q then
+    Y = Instance.new("TextButton")
+    u = Instance.new("UICorner")
+    A = Instance.new("UIStroke")
+end
+local n, B, h
+if w then
+    n = Instance.new("TextButton")
+    B = Instance.new("UICorner")
+    h = Instance.new("UIStroke")
+end
+local t, R, f
+if X then
+    t = Instance.new("TextButton")
+    R = Instance.new("UICorner")
+    f = Instance.new("UIStroke")
+end
+local b = Instance.new("TextLabel")
+pcall(
+    function()
+        if q then
+            for s, X in ipairs(q:GetChildren()) do
+                if
+                    X:IsA("ScreenGui") and
+                        (X.Name:find("SecureLoader") or X.Name:find("EliteAuth") or X.Name:find("KeyAuth") or
+                            X.Name:find("UI_"))
+                 then
+                    X:Destroy()
+                end
+            end
         end
-        idx = idx + 1
     end
-    return out
+)
+local C = "UI_" .. string.sub(D:GenerateGUID(false), 1, 8)
+L.Name = C
+L.Parent = q
+L.ResetOnSpawn = false
+L.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+a.Parent = L
+a.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+a.BackgroundTransparency = 0
+local G = Instance.new("UIGradient")
+G.Color =
+    ColorSequence.new(
+    {ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 17)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 10))}
+)
+G.Rotation = 90
+G.Parent = a
+g.CornerRadius = UDim.new(0, 12)
+g.Parent = a
+K.Color = Color3.fromRGB(255, 255, 255)
+K.Thickness = 1
+K.Transparency = .9
+K.Parent = a
+T.Name = "TopGlow"
+T.Parent = a
+T.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+T.BorderSizePixel = 0
+T.Size = UDim2.new(1, 0, 0, 2)
+T.Position = UDim2.new(0, 0, 0, 0)
+local sI = Instance.new("UIGradient")
+sI.Color =
+    ColorSequence.new(
+    {
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 17)),
+        ColorSequenceKeypoint.new(.2, Color3.fromRGB(59, 130, 246)),
+        ColorSequenceKeypoint.new(.8, Color3.fromRGB(59, 130, 246)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 17))
+    }
+)
+sI.Parent = T
+local XI = Instance.new("Frame")
+XI.Name = "FauxBlur"
+XI.Parent = T
+XI.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+XI.BorderSizePixel = 0
+XI.Size = UDim2.new(1, 0, 0, 4)
+XI.Position = UDim2.new(0, 0, 0, 0)
+XI.BackgroundTransparency = .5
+local dI = sI:Clone()
+dI.Parent = XI
+V.Name = "Title"
+V.Parent = a
+V.BackgroundTransparency = 1
+V.Position = UDim2.new(0, 0, 0, 28)
+V.Size = UDim2.new(1, 0, 0, 24)
+V.Font = Enum.Font.GothamBold
+V.Text = s.AppName
+V.TextColor3 = Color3.fromRGB(255, 255, 255)
+V.TextSize = 22
+S.Name = "Subtitle"
+S.Parent = a
+S.BackgroundTransparency = 1
+S.Position = UDim2.new(0, 0, 0, 56)
+S.Size = UDim2.new(1, 0, 0, 16)
+S.Font = Enum.Font.GothamMedium
+S.Text = s.Subtitle
+S.TextColor3 = Color3.fromRGB(170, 170, 170)
+S.TextSize = 13
+S.TextTransparency = 0
+z.Name = "KeyInputContainer"
+z.Parent = a
+z.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+z.BackgroundTransparency = 0
+z.Position = UDim2.new(.08, 0, 0, 95)
+z.Size = UDim2.new(.84, 0, 0, 46)
+F.CornerRadius = UDim.new(0, 6)
+F.Parent = z
+j.Color = Color3.fromRGB(45, 45, 45)
+j.Thickness = 1
+j.Transparency = 0
+j.Parent = z
+k.Name = "KeyInput"
+k.Parent = z
+k.BackgroundTransparency = 1
+k.Position = UDim2.new(0, 0, 0, 0)
+k.Size = UDim2.new(1, 0, 1, 0)
+k.Font = Enum.Font.Code
+k.PlaceholderText = s.PlaceholderText
+k.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+k.Text = ""
+k.TextColor3 = Color3.fromRGB(240, 240, 240)
+k.TextSize = 13
+k.ClearTextOnFocus = false
+k.TextXAlignment = Enum.TextXAlignment.Center
+P.Parent = k
+P.PaddingLeft = UDim.new(0, 10)
+P.PaddingRight = UDim.new(0, 10)
+k.Focused:Connect(
+    function()
+        (c:Create(j, TweenInfo.new(.3), {Color = Color3.fromRGB(59, 130, 246)})):Play()
+    end
+)
+k.FocusLost:Connect(
+    function()
+        (c:Create(j, TweenInfo.new(.3), {Color = Color3.fromRGB(45, 45, 45)})):Play()
+    end
+)
+E.Name = "LoginBtn"
+E.Parent = a
+E.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+E.Position = UDim2.new(.08, 0, 0, 155)
+E.Size = UDim2.new(.84, 0, 0, 44)
+E.Font = Enum.Font.GothamBold
+E.Text = s.ButtonText
+E.TextColor3 = Color3.fromRGB(255, 255, 255)
+E.TextSize = 14
+E.AutoButtonColor = false
+E.TextStrokeTransparency = 1
+H.CornerRadius = UDim.new(0, 6)
+H.Parent = E
+local wI = 215
+local function QI(s, X, d, w, Q)
+    s.Name = w
+    s.Parent = a
+    s.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    s.Position = UDim2.new(.08, 0, 0, Q)
+    s.Size = UDim2.new(.84, 0, 0, 38)
+    s.Font = Enum.Font.GothamMedium
+    s.Text = w
+    s.TextColor3 = Color3.fromRGB(220, 220, 220)
+    s.TextSize = 13
+    s.AutoButtonColor = false
+    X.CornerRadius = UDim.new(0, 6)
+    X.Parent = s
+    d.Color = Color3.fromRGB(45, 45, 45)
+    d.Thickness = 1
+    d.Transparency = 0
+    d.Parent = s
+    s.MouseEnter:Connect(
+        function()
+            (c:Create(s, TweenInfo.new(.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)})):Play()
+        end
+    )
+    s.MouseLeave:Connect(
+        function()
+            (c:Create(s, TweenInfo.new(.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)})):Play()
+        end
+    )
+    return (Q + 38) + 10
 end
-
--- ============================================================
--- KILLER MODE: Pick words that end in hard letters
--- ============================================================
-function pickWords(prefix, n, forOpponent)
-    prefix = prefix:lower()
-    if prefix == "" then return {} end
-    local plen = #prefix
-
-    -- Get all candidates
-    local learned = {}
-    for w in pairs(State.learnedValid) do
-        if #w > plen and w:sub(1, plen) == prefix and isValidWord(w) then
-            learned[#learned+1] = w
+if d then
+    wI = QI(J, v, p, "Get Key (Work.ink)", wI)
+end
+if w then
+    wI = QI(n, B, h, "Get Key (Linkvertise)", wI)
+end
+if Q then
+    wI = QI(Y, u, A, "Get Key", wI)
+end
+if X then
+    wI = QI(t, R, f, "Join Discord Support", wI)
+end
+b.Name = "Status"
+b.Parent = a
+b.BackgroundTransparency = 1
+b.Position = UDim2.new(0, 15, 0, wI)
+b.Size = UDim2.new(1, -30, 0, 32)
+b.Font = Enum.Font.GothamMedium
+b.Text = ""
+b.TextColor3 = Color3.fromRGB(150, 150, 150)
+b.TextSize = 10
+b.TextWrapped = true
+b.TextYAlignment = Enum.TextYAlignment.Top
+a.ClipsDescendants = true
+local qI = (wI + 36) + 10
+a.Size = UDim2.new(0, 340, 0, qI)
+a.Position = UDim2.new(.5, -170, .5, -qI / 2)
+local DI = Instance.new("UIScale")
+DI.Parent = a
+DI.Scale = .85
+(c:Create(DI, TweenInfo.new(.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})):Play()
+local OI = false
+local rI, yI, oI
+a.InputBegan:Connect(
+    function(s)
+        if s.UserInputType == Enum.UserInputType.MouseButton1 or s.UserInputType == Enum.UserInputType.Touch then
+            OI = true
+            yI = s.Position
+            oI = a.Position
+            s.Changed:Connect(
+                function()
+                    if s.UserInputState == Enum.UserInputState.End then
+                        OI = false
+                    end
+                end
+            )
         end
     end
-    
-    local commonLimit = State.killerMode and 20 or 10
-    local common = searchCommon(prefix, commonLimit)
-
-    local cands, seen = {}, {}
-    for _, w in ipairs(learned) do
-        if not seen[w] then seen[w] = true cands[#cands+1] = w end
-    end
-    for _, w in ipairs(common) do
-        if not seen[w] then seen[w] = true cands[#cands+1] = w end
-    end
-    
-    if #cands == 0 then return {} end
-
-    -- KILLER MODE: Sort by hard ending letters
-    if State.killerMode and forOpponent then
-        table.sort(cands, function(a, b)
-            local lastA = a:sub(-1)
-            local lastB = b:sub(-1)
-            local scoreA = KILLER_SCORES[lastA] or 0
-            local scoreB = KILLER_SCORES[lastB] or 0
-            if scoreA ~= scoreB then return scoreA > scoreB end
-            return (FreqRank[a] or 999999) < (FreqRank[b] or 999999)
-        end)
-    else
-        -- Normal mode: most common first
-        table.sort(cands, function(a, b)
-            return (FreqRank[a] or 999999) < (FreqRank[b] or 999999)
-        end)
-    end
-
-    local top = {}
-    for i = 1, math.min(n, #cands) do top[i] = cands[i] end
-    for i = #top, 2, -1 do
-        local j = math.random(i)
-        top[i], top[j] = top[j], top[i]
-    end
-    return top
-end
-
-local function letterScore(ch)
-    local base = #searchCommon(ch:lower(), 15)
-    local learned = 0
-    for w in pairs(State.learnedValid) do
-        if w:sub(1,1) == ch:lower() then learned = learned + 1 end
-    end
-    return base + learned
-end
-
--- Typing functions
-local function typeSuffix(suffix, token)
-    local s = getSpeed()
-    for i = 1, #suffix do
-        if token ~= State.roundToken then return false end
-        local upper = suffix:sub(i, i):upper()
-        event.fire("keyStroke", upper)
-        event.remoteFire("keyStroke", upper)
-        local d = s.keyMin + math.random() * (s.keyMax - s.keyMin)
-        if math.random() < s.pauseChance then
-            d = d + s.pauseMin + math.random() * (s.pauseMax - s.pauseMin)
+)
+a.InputChanged:Connect(
+    function(s)
+        if s.UserInputType == Enum.UserInputType.MouseMovement or s.UserInputType == Enum.UserInputType.Touch then
+            rI = s
         end
-        task.wait(d)
     end
-    return token == State.roundToken
-end
-
-local function eraseSuffix(len)
-    for _ = 1, len do
-        event.remoteFire("keyStroke", -1)
-        task.wait(0.03)
+)
+M.InputChanged:Connect(
+    function(s)
+        if s == rI and OI then
+            local X = s.Position - yI
+            a.Position = UDim2.new(oI.X.Scale, oI.X.Offset + X.X, oI.Y.Scale, oI.Y.Offset + X.Y)
+        end
     end
-end
-
-local function answerWithRetry(prefix, token)
-    local opts = pickWords(prefix, 4, false)  -- false = for me (safe mode)
-    if #opts == 0 then
-        setStatus("Skip: no safe word for '" .. prefix:upper() .. "'", THEME.orange)
+)
+E.MouseEnter:Connect(
+    function()
+        (c:Create(U, TweenInfo.new(.3), {Transparency = .2, Color = Color3.fromRGB(255, 255, 255)})):Play()
+    end
+)
+E.MouseLeave:Connect(
+    function()
+        (c:Create(U, TweenInfo.new(.3), {Transparency = .5, Color = Color3.fromRGB(59, 130, 246)})):Play()
+        if BtnScale then
+            (c:Create(BtnScale, TweenInfo.new(.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1})):Play()
+        end
+    end
+)
+local NI = "https://eliteauth.vercel.app/api/verify-and-load"
+local ZI = Instance.new("UIScale")
+ZI.Parent = E
+E.MouseButton1Down:Connect(
+    function()
+        (c:Create(ZI, TweenInfo.new(.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = .95})):Play()
+    end
+)
+E.MouseButton1Up:Connect(
+    function()
+        (c:Create(ZI, TweenInfo.new(.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1})):Play()
+    end
+)
+local function mI()
+    local X = k.Text
+    if X == "" then
+        b.Text = s.ErrorText
+        b.TextColor3 = Color3.fromRGB(255, 100, 100)
         return
     end
-
-    for i, word in ipairs(opts) do
-        if token ~= State.roundToken then return end
-
-        if i > 1 then
-            eraseSuffix(#opts[i-1] - #prefix)
-            task.wait(0.1)
+    b.Text = s.LoadingText
+    b.TextColor3 = Color3.fromRGB(150, 150, 150)
+    local d = D:UrlEncode(X)
+    local w = D:UrlEncode(W)
+    local Q = D:UrlEncode(s.ScriptId or "")
+    local q, O =
+        pcall(
+        function()
+            return m(
+                {
+                    Url = NI ..
+                        ("?key=" .. (d .. ("&appId=" .. (s.OwnerId .. ("&scriptId=" .. (Q .. ("&hwid=" .. w))))))),
+                    Method = "GET"
+                }
+            )
         end
-
-        setStatus((i > 1 and "retry → " or "→ ") .. word, THEME.accent)
-
-        if not typeSuffix(word:sub(#prefix + 1), token) then return end
-        task.wait(0.15)
-
-        State.lastSubmitted = word
-        State.lastSubmitTime = os.clock()
-        event.remoteFire("tryAnswer")
-        State.used[word] = true
-
-        local t0 = os.clock()
-        while os.clock() - t0 < 1.3
-            and State.lastSubmitted ~= nil
-            and token == State.roundToken do
-            task.wait(0.1)
+    )
+    local r = e(O)
+    if q and r.success then
+        local d, w =
+            pcall(
+            function()
+                return D:JSONDecode(r.body)
+            end
+        )
+        if not d or type(w) ~= "table" then
+            b.Text = "Invalid JSON response from server"
+            b.TextColor3 = Color3.fromRGB(255, 100, 100)
+            return
         end
-
-        if State.lastSubmitted == nil then return end
+        if not w.script or not w.signature then
+            b.Text = "Invalid response format from secure backend"
+            b.TextColor3 = Color3.fromRGB(255, 100, 100)
+            return
+        end
+        local Q = true
+        local q, O =
+            pcall(
+            function()
+                local X = N and N() or s.Secret
+                if crypt and crypt.hmac then
+                    return crypt.hmac("sha256", w.script, X)
+                elseif syn and (syn.crypt and (syn.crypt.custom and syn.crypt.custom.hash)) then
+                    return syn.crypt.custom.hash("sha256", w.script .. X)
+                end
+                return nil
+            end
+        )
+        if q and O then
+            if O ~= w.signature then
+                Q = false
+            end
+        end
+        if not Q then
+            warn("SECURITY ALERT: Script signature mismatch! The payload may have been tampered with.")
+            b.Text = s.ErrorText
+            b.TextColor3 = Color3.fromRGB(255, 50, 50)
+            return
+        end
+        b.Text = s.SuccessText
+        b.TextColor3 = Color3.fromRGB(50, 255, 50)
+        pcall(
+            function()
+                if writefile then
+                    local d = string.gsub(s.AppName or "app", "[^%w]", "")
+                    local w = string.gsub(s.ScriptId or "global", "[^%w]", "")
+                    local Q = d .. ("_" .. (w .. "_saved_key.txt"))
+                    writefile(Q, X)
+                end
+            end
+        )
+        pcall(
+            function()
+                if x then
+                    x:Destroy()
+                end
+                a.Visible = false
+                L.Enabled = false
+                L.Parent = nil
+                L:Destroy()
+            end
+        )
+        l = true
+        pcall(
+            function()
+                if table and table.clear then
+                    table.clear(s)
+                end
+                s = nil
+                o = nil
+                N = nil
+                y = nil
+            end
+        )
+    else
+        local X = s.ErrorText
+        pcall(
+            function()
+                local s = D:JSONDecode(r.body)
+                if type(s) == "table" and s.message then
+                    X = tostring(s.message)
+                end
+            end
+        )
+        b.Text = X
+        b.TextColor3 = Color3.fromRGB(255, 100, 100)
+        pcall(
+            function()
+                if delfile and isfile then
+                    local X = string.gsub(s.AppName or "app", "[^%w]", "")
+                    local d = string.gsub(s.ScriptId or "global", "[^%w]", "")
+                    local w = X .. ("_" .. (d .. "_saved_key.txt"))
+                    if isfile(w) then
+                        delfile(w)
+                    end
+                end
+            end
+        )
     end
 end
-
--- ============================================================
--- NETWORK HOOKS
--- ============================================================
-event.remoteConnect("updateRound", function(rd, p2, turnPlayer)
-    pcall(function()
-        State.roundToken = State.roundToken + 1
-        local token = State.roundToken
-
-        local isMe
-        if type(turnPlayer) == "string" then
-            isMe = (turnPlayer == player.Name)
-        elseif turnPlayer ~= nil then
-            isMe = (turnPlayer == player)
-        else
-            isMe = (player:GetAttribute("IsTurn") == true)
-        end
-
-        if not isMe then return end
-
-        local s = getSpeed()
-        local think = State.retryPending
-            and (0.15 + math.random() * 0.2)
-            or (s.thinkMin + math.random() * (s.thinkMax - s.thinkMin))
-
-        if rd.Choices then
-            State.chain = 0
-            if not State.autoChoose then return end
-            
-            -- KILLER MODE: Choose letter that gives opponent hard words
-            task.delay(think, function()
-                pcall(function()
-                    if token ~= State.roundToken then return end
-                    
-                    local best, bestScore = nil, -1
-                    for _, ch in ipairs(rd.Choices) do
-                        local score = letterScore(ch:lower())
-                        -- In killer mode, prefer letters with FEW words (trap opponent)
-                        if State.killerMode then
-                            score = -score  -- Invert: fewer words = better
+E.MouseButton1Click:Connect(mI)
+pcall(
+    function()
+        local X = string.gsub(s.AppName or "app", "[^%w]", "")
+        local d = string.gsub(s.ScriptId or "global", "[^%w]", "")
+        local w = X .. ("_" .. (d .. "_saved_key.txt"))
+        if readfile and (isfile and isfile(w)) then
+            local s = readfile(w)
+            if s and s ~= "" then
+                k.Text = s
+                task.spawn(
+                    function()
+                        task.wait(.2)
+                        if not l then
+                            mI()
                         end
-                        if score > bestScore then best, bestScore = ch, score end
                     end
-                    
-                    if best then
-                        event.remoteFire("chooseLetter", best:lower())
-                        State.retryPending = false
-                        setStatus(State.killerMode and "⚔ Trap letter: " .. best:upper() or "Letter: " .. best:upper(), 
-                                  State.killerMode and THEME.killer or THEME.accent)
-                    end
-                end)
-            end)
-        else
-            if not State.autoAnswer then return end
-            task.delay(think, function()
-                pcall(function()
-                    if token ~= State.roundToken then return end
-                    answerWithRetry(rd.RequiredLetter or "", token)
-                end)
-            end)
-        end
-    end)
-end)
-
-event.remoteConnect("correct", function(word)
-    pcall(function()
-        local w = cleanWord(word)
-        if not w then return end
-        State.used[w] = true
-
-        local isMe = (State.lastSubmitted and w == State.lastSubmitted)
-        if not State.learnedValid[w] then
-            State.learnedValid[w] = true
-            State.learnedInvalid[w] = nil
-            dbDirty = true
-        end
-        if isMe then
-            State.lastSubmitted = nil
-            setStatus("✔ " .. w, THEME.green)
-        end
-        State.chain = State.chain + 1
-    end)
-end)
-
-event.remoteConnect("takeDamage", function(target)
-    pcall(function()
-        local isUs = false
-        if type(target) == "number" then
-            isUs = (target == player.UserId)
-        elseif type(target) == "userdata" then
-            pcall(function() isUs = (target == player or target.UserId == player.UserId) end)
-        else
-            isUs = (State.lastSubmitted ~= nil and (os.clock() - State.lastSubmitTime) < 6)
-        end
-        if isUs and State.lastSubmitted then
-            local w = State.lastSubmitted
-            State.blacklist[w] = true
-            local c = cleanWord(w)
-            if c then
-                State.learnedInvalid[c] = true
-                State.learnedValid[c] = nil
-                dbDirty = true
+                )
             end
-            setStatus("✘ " .. w, THEME.red)
-            State.lastSubmitted = nil
-            State.retryPending = true
         end
-    end)
-end)
-
-event.remoteConnect("endGame", function()
-    pcall(function()
-        State.chain = 0
-        State.retryPending = false
-        State.lastSubmitted = nil
-        setStatus("Ready", THEME.textDim)
-    end)
-end)
-
--- ============================================================
--- STARTUP
--- ============================================================
-pcall(function()
-    if _makefolder and _isfolder and not _isfolder("workspace") then
-        _makefolder("workspace")
     end
-end)
-saveConfig()
-
-local vc = 0
-for _ in pairs(State.learnedValid) do vc = vc + 1 end
-setStatus("Ready | " .. vc .. " learned words | Killer Ready", THEME.textDim)
-
-print("[xFuxk] Ranked v2.0 KILLER EDITION loaded")
+)
+if d then
+    J.MouseButton1Click:Connect(
+        function()
+            setclipboard(s.WorkInkUrl)
+            b.Text = "Link copied. Open in your browser to get the key"
+            b.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+    )
+end
+if w then
+    n.MouseButton1Click:Connect(
+        function()
+            setclipboard(s.LinkvertiseUrl)
+            b.Text = "Link copied. Open in your browser to get the key"
+            b.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+    )
+end
+if Q then
+    Y.MouseButton1Click:Connect(
+        function()
+            setclipboard(s.CustomGetKeyUrl)
+            b.Text = "Link copied. Open in your browser to get the key"
+            b.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+    )
+end
+if X then
+    t.MouseButton1Click:Connect(
+        function()
+            setclipboard(s.DiscordUrl)
+            b.Text = "Discord link copied to clipboard"
+            b.TextColor3 = Color3.fromRGB(150, 150, 150)
+            pcall(
+                function()
+                    local X =
+                        s.DiscordUrl:match("discord%.gg/([a-zA-Z0-9]+)") or
+                        s.DiscordUrl:match("discord%.com/invite/([a-zA-Z0-9]+)")
+                    if not X then
+                        return
+                    end
+                    local d = (syn and syn.request) or (http and http.request) or http_request or request
+                    if d then
+                        d(
+                            {
+                                Url = "http://127.0.0.1:6463/rpc?v=1",
+                                Method = "POST",
+                                Headers = {["Content-Type"] = "application/json", Origin = "https://discord.com"},
+                                Body = D:JSONEncode(
+                                    {cmd = "INVITE_BROWSER", args = {code = X}, nonce = D:GenerateGUID(false)}
+                                )
+                            }
+                        )
+                    end
+                end
+            )
+        end
+    )
+end
+repeat
+    task.wait(.1)
+until l == true
+end
+local eI = game:GetService("Players")
+local lI = game:GetService("UserInputService")
+local WI = game:GetService("TweenService")
+local cI = game:GetService("VirtualInputManager")
+local MI = game:GetService("HttpService")
+local LI = eI.LocalPlayer
+if _G.x9c then
+    for s, X in pairs(_G.x9c) do
+        pcall(
+            function()
+                X:Disconnect()
+            end
+        )
+    end
+end
+if _G.x9g then
+    pcall(
+        function()
+            _G.x9g:Destroy()
+        end
+    )
+end
+_G.x9c = {}
+local function aI(s)
+    table.insert(_G.x9c, s)
+    return s
+end
+local gI = {
+    ans = true,
+    cho = true,
+    delay = .05,
+    reaction = 0,
+    lengthMode = 2,
+    trapMode = false,
+    autoSit = true,
+    hopTarget = 100,
+    autoHop = false,
+    clearDelay = .01
+}
+local KI = {}
+local II = {}
+local TI = {}
+local xI = {}
+local VI = {}
+local SI = {}
+local zI = {}
+local FI = {}
+local jI = nil
+local kI = false
+local PI = 0
+local EI, HI = nil, nil
+local iI
+local UI = type(writefile) == "function"
+local JI = type(readfile) == "function"
+local vI = type(isfile) == "function"
+local pI = {}
+local YI = {}
+local uI = {}
+local AI = {}
+local nI = {}
+local BI = nil
+local hI = nil
+local tI = "SMSM_No_Match.txt"
+local function RI(s)
+    pcall(
+        function()
+            local X = string.format("[%s] Prefix: %s (No Word Found)\n", os.date("%X"), s or "?")
+            if type(appendfile) == "function" then
+                appendfile(tI, X)
+            elseif UI then
+                local s = ""
+                if vI and (isfile(tI) and JI) then
+                    s = readfile(tI)
+                end
+                writefile(tI, s .. X)
+            end
+        end
+    )
+end
+local function fI(s)
+    local X = setclipboard or toclipboard or (syn and syn.write_clipboard) or (Clipboard and Clipboard.set)
+    if X then
+        local d = pcall(X, s)
+        if d then
+            return true
+        end
+    end
+    return false
+end
+local bI = {}
+for s, X in ipairs(Enum.KeyCode:GetEnumItems()) do
+    local d = X.Name
+    if #d == 1 and d:match("%u") then
+        bI[d] = X
+    end
+end
+local CI = {
+    "fuck",
+    "shit",
+    "bitch",
+    "cunt",
+    "nigg",
+    "asshol",
+    "slut",
+    "whore",
+    "porn",
+    "penis",
+    "vagina",
+    "masturb",
+    "dickhead",
+    "sexy",
+    "sexual",
+    "sexism",
+    "tit",
+    "cock",
+    "dick",
+    "anal",
+    "anus",
+    "rape",
+    "nude",
+    "piss",
+    "bastard",
+    "erot"
+}
+local GI = {
+    dick = true,
+    dicks = true,
+    cock = true,
+    cocks = true,
+    cum = true,
+    sex = true,
+    rape = true,
+    rapes = true,
+    tits = true,
+    boob = true,
+    boobs = true
+}
+local function sK(s)
+    if not s then
+        return true
+    end
+    if GI[s] then
+        return true
+    end
+    for X, d in ipairs(CI) do
+        if s:find(d) then
+            return true
+        end
+    end
+    return false
+end
+local XK = {}
+local dK = {
+    regis = true,
+    kijiji = true,
+    arxiv = true,
+    diecast = true,
+    erade = true,
+    coolpix = true,
+    waxheads = true,
+    infiniti = true,
+    elfwort = true,
+    elfed = true,
+    elfship = true,
+    llautu = true,
+    llanero = true,
+    lludd = true,
+    lleu = true,
+    ekhimi = true,
+    ekphory = true,
+    ekerite = true,
+    ekphoria = true,
+    macworld = true,
+    ixodiasis = true,
+    ixodic = true,
+    soleil = true,
+    inglu = true,
+    ingle = true,
+    ingles = true,
+    inglesa = true,
+    nsw = true,
+    nspcc = true,
+    nsaid = true,
+    nsaids = true,
+    nsfw = true,
+    lmao = true,
+    lmfao = true,
+    tbqh = true,
+    tbsp = true,
+    tbsps = true,
+    tgif = true,
+    tgvs = true,
+    tgwu = true,
+    gtfo = true,
+    ttfn = true,
+    ttyl = true,
+    wtaf = true,
+    wwii = true,
+    wwjd = true,
+    wdyt = true,
+    fwiw = true,
+    gsoh = true,
+    iirc = true,
+    iykwim = true,
+    iyswim = true,
+    kthx = true,
+    jsyk = true,
+    hmmm = true,
+    rtfm = true,
+    fmcg = true,
+    bbmd = true,
+    bbmed = true,
+    bbming = true,
+    bbms = true,
+    bbqs = true,
+    bccs = true,
+    bchs = true,
+    bffs = true,
+    bfns = true,
+    bfpo = true,
+    bfpos = true,
+    bfps = true,
+    bkbndr = true,
+    bkcy = true,
+    bkgd = true,
+    bklr = true,
+    bkpr = true,
+    bkpt = true,
+    bmus = true,
+    bpds = true,
+    bphil = true,
+    bskt = true,
+    btcs = true,
+    btise = true,
+    btry = true,
+    bvds = true,
+    bwrs = true,
+    cbds = true,
+    cfas = true,
+    cfcs = true,
+    cfes = true,
+    cfos = true,
+    cfps = true,
+    cpas = true,
+    cpvc = true,
+    cpve = true,
+    dbag = true,
+    dbags = true,
+    dbms = true,
+    dbrn = true,
+    dfab = true,
+    dfcs = true,
+    dfid = true,
+    dgag = true,
+    dlitt = true,
+    dlvy = true,
+    dphil = true,
+    dphils = true,
+    dpps = true,
+    dtds = true,
+    dttv = true,
+    fchar = true,
+    fcomp = true,
+    fconv = true,
+    fconvert = true,
+    ffler = true,
+    fgrid = true,
+    fhsa = true,
+    fname = true,
+    fnarr = true,
+    fnese = true,
+    fplot = true,
+    fpsps = true,
+    fpss = true,
+    fpus = true,
+    fshs = true,
+    fstore = true,
+    fsts = true,
+    gdinfo = true,
+    gdns = true,
+    gdps = true,
+    gpcd = true,
+    gpmu = true,
+    gprs = true,
+    gpss = true,
+    gthite = true,
+    gtis = true,
+    hbcu = true,
+    hbcus = true,
+    hbic = true,
+    hbics = true,
+    hcfc = true,
+    hcfcs = true,
+    hcfs = true,
+    hconvert = true,
+    hfcs = true,
+    hfcss = true,
+    hgvs = true,
+    hgwy = true,
+    hhds = true,
+    hlqn = true,
+    hlung = true,
+    hmas = true,
+    hmoc = true,
+    hmos = true,
+    hmrc = true,
+    hmso = true,
+    hnwi = true,
+    hnwis = true,
+    hsdpa = true,
+    hsts = true,
+    hvac = true,
+    hvacs = true,
+    ieds = true,
+    ieee = true,
+    ielts = true,
+    jcbs = true,
+    jcrs = true,
+    jctn = true,
+    jger = true,
+    kbps = true,
+    kpis = true,
+    kpuesi = true,
+    kstj = true,
+    kthibh = true,
+    lbdr = true,
+    lbds = true,
+    lbinit = true,
+    lcds = true,
+    lcms = true,
+    lconvert = true,
+    lcpl = true,
+    lcsymbol = true,
+    ldcs = true,
+    ldinfo = true,
+    ldpe = true,
+    ldrs = true,
+    lner = true,
+    lpns = true,
+    lrecl = true,
+    lrvs = true,
+    lsbs = true,
+    lsds = true,
+    mdma = true,
+    mdnt = true,
+    mdpv = true,
+    mdse = true,
+    mgal = true,
+    mgysgt = true,
+    mktg = true,
+    mvos = true,
+    mvps = true,
+    ncaa = true,
+    ncos = true,
+    ncov = true,
+    nfld = true,
+    nmex = true,
+    nnps = true,
+    npcs = true,
+    npfx = true,
+    npts = true,
+    npvs = true,
+    nrsv = true,
+    ntsc = true,
+    nvcjd = true,
+    nvis = true,
+    nvqs = true,
+    pbxes = true,
+    pbxs = true,
+    pcas = true,
+    pcbs = true,
+    pcmcia = true,
+    pcns = true,
+    pcso = true,
+    pdas = true,
+    pdfs = true,
+    pdsa = true,
+    pgce = true,
+    pgntt = true,
+    pgnttrp = true,
+    pkgs = true,
+    pkwy = true,
+    pmed = true,
+    pmid = true,
+    pming = true,
+    pmqs = true,
+    pmsg = true,
+    pmsl = true,
+    ppaca = true,
+    pparc = true,
+    pptn = true,
+    pvrs = true,
+    rbfs = true,
+    rdbms = true,
+    rdcs = true,
+    rdfs = true,
+    rgns = true,
+    rnas = true,
+    rnase = true,
+    rnli = true,
+    rnzaf = true,
+    rnzn = true,
+    rpgs = true,
+    rpvs = true,
+    rrna = true,
+    rrsp = true,
+    rtas = true,
+    tpss = true,
+    tvnz = true,
+    uefa = true,
+    uucpnet = true,
+    vbac = true,
+    vbacs = true,
+    vcjd = true,
+    vcrs = true,
+    vdts = true,
+    vdus = true,
+    vmos = true,
+    vmsize = true,
+    vpls = true,
+    vpns = true,
+    vsnet = true,
+    vsop = true,
+    vtol = true,
+    vtrs = true,
+    vvip = true,
+    vvips = true,
+    vvll = true,
+    wftu = true,
+    wgtn = true,
+    wkly = true,
+    wmds = true,
+    wpcs = true,
+    ywca = true,
+    zyban = true,
+    zshops = true,
+    zhang = true,
+    ezcema = true,
+    ezan = true,
+    ezek = true,
+    ezba = true,
+    joomla = true,
+    iambi = true,
+    usenet = true,
+    twiki = true,
+    idola = true,
+    idolon = true,
+    ebook = true,
+    undef = true,
+    dooyoo = true,
+    xonotlites = true,
+    everytime = true,
+    ossobucco = true,
+    andale = true,
+    yearbook = true,
+    ximenez = true,
+    xiphioid = true,
+    ximenia = true,
+    xiphodon = true,
+    xiphoids = true,
+    xoanon = true,
+    xoanona = true,
+    sku = true,
+    kyathoi = true,
+    kyabuka = true,
+    kyaks = true,
+    roriest = true,
+    rorulent = true,
+    rorters = true,
+    rortiest = true,
+    atreyu = true,
+    ewghen = true,
+    ewest = true,
+    ewelease = true,
+    ewking = true,
+    svenska = true,
+    awners = true,
+    gratuit = true,
+    dealtime = true,
+    diggs = true,
+    psilotic = true,
+    palau = true,
+    openid = true,
+    opengl = true,
+    webmin = true,
+    alibris = true,
+    adipex = true,
+    nuevo = true,
+    greenberg = true,
+    namespace = true,
+    tamiflu = true,
+    easton = true,
+    zdnet = true,
+    alicante = true,
+    technics = true,
+    autodesk = true,
+    pradesh = true,
+    xoana = true,
+    leica = true,
+    macau = true,
+    reged = true,
+    newbury = true,
+    ericsson = true,
+    sandisk = true,
+    suppl = true,
+    letras = true,
+    nederland = true,
+    multicast = true,
+    gratuite = true,
+    gorillaz = true,
+    katz = true,
+    amex = true,
+    gatwick = true,
+    torino = true,
+    repec = true,
+    mundo = true,
+    andreas = true,
+    constr = true,
+    newsgator = true,
+    ionamin = true,
+    zucchetto = true,
+    tranny = true,
+    onsite = true,
+    ismaelite = true,
+    ismdom = true,
+    ismaili = true,
+    ismal = true,
+    smugmug = true,
+    smilies = true,
+    tantalism = true,
+    tantalic = true,
+    ishshakku = true,
+    ishes = true,
+    nadu = true,
+    realtime = true,
+    atebrin = true,
+    ateuchi = true,
+    ateba = true,
+    ateknia = true,
+    adaptec = true,
+    yuzu = true,
+    galerie = true,
+    activex = true,
+    alameda = true,
+    anders = true,
+    athlon = true,
+    audiovox = true,
+    axel = true,
+    ayond = true,
+    ayries = true,
+    dimage = true,
+    directx = true,
+    eelfares = true,
+    eeyuck = true,
+    ektexine = true,
+    ekuele = true,
+    entre = true,
+    eos = true,
+    eosine = true,
+    eosines = true,
+    eozoonal = true,
+    erotik = true,
+    espanol = true,
+    essex = true,
+    hyatt = true,
+    iacchic = true,
+    iatric = true,
+    iatrology = true,
+    intactile = true,
+    intagli = true,
+    intail = true,
+    kanye = true,
+    kbytes = true,
+    kerala = true,
+    kyocera = true,
+    lenox = true,
+    lexar = true,
+    lexmark = true,
+    lightbox = true,
+    mcb = true,
+    mcf = true,
+    mcg = true,
+    mch = true,
+    mci = true,
+    mcp = true,
+    mcr = true,
+    mcs = true,
+    mi = true,
+    middlesex = true,
+    ms = true,
+    mw = true,
+    neville = true,
+    nortel = true,
+    norwood = true,
+    nouveau = true,
+    orbitz = true,
+    oxley = true,
+    psilotum = true,
+    psionics = true,
+    psittaci = true,
+    psize = true,
+    sesso = true,
+    sussex = true,
+    tchick = true,
+    tchincou = true,
+    tcpip = true,
+    terre = true,
+    tesco = true,
+    thanx = true,
+    trembl = true,
+    uralites = true,
+    uralium = true,
+    uxorially = true,
+    vyase = true,
+    vygies = true,
+    vyingly = true,
+    vyrnwy = true,
+    xanax = true,
+    xantheins = true,
+    xanthenes = true,
+    xanthins = true,
+    xanthone = true,
+    xbox = true,
+    xerophily = true,
+    xiphisterna = true,
+    xiphisternum = true,
+    xml = true,
+    xray = true,
+    xrays = true,
+    xylidines = true,
+    xylitol = true
+}
+local wK = "SMSM_Blacklist.txt"
+local QK = "SMSM_Rejected_Words.txt"
+pcall(
+    function()
+        if vI and (isfile(wK) and JI) then
+            local s = readfile(wK)
+            for s in s:gmatch("[^\r\n]+") do
+                dK[(s:lower()):gsub("%s+", "")] = true
+            end
+        end
+    end
+)
+local function qK(s)
+    if not s or dK[s] then
+        return
+    end
+    dK[s] = true
+    pcall(
+        function()
+            if type(appendfile) == "function" then
+                appendfile(wK, s .. "\n")
+            elseif UI then
+                local X = ""
+                if vI and (isfile(wK) and JI) then
+                    X = readfile(wK)
+                end
+                writefile(wK, X .. (s .. "\n"))
+            end
+        end
+    )
+end
+local function DK(s, X)
+    pcall(
+        function()
+            local d = string.format("[%s] Prefix: %s | Word: %s\n", os.date("%X"), X or "?", s)
+            if type(appendfile) == "function" then
+                appendfile(QK, d)
+            elseif UI then
+                local s = ""
+                if vI and (isfile(QK) and JI) then
+                    s = readfile(QK)
+                end
+                writefile(QK, s .. d)
+            end
+        end
+    )
+end
+local function OK(s, X)
+    if not s then
+        return
+    end
+    s = (s:lower()):gsub("%s+", "")
+    if XK[s] or dK[s] then
+        return
+    end
+    if #s < 3 or #s > 24 or not s:match("^%a+$") then
+        return
+    end
+    if s:match("(.)%1%1") or sK(s) then
+        return
+    end
+    XK[s] = true
+    local d = (X == 1) and KI or ((X == 2) and II or TI)
+    local w = (X == 1) and xI or ((X == 2) and VI or SI)
+    table.insert(d, s)
+    local Q = s:sub(1, 1)
+    if not w[Q] then
+        w[Q] = {}
+    end
+    table.insert(w[Q], s)
+    if #s >= 2 then
+        local X = s:sub(1, 2)
+        if not w[X] then
+            w[X] = {}
+        end
+        table.insert(w[X], s)
+    end
+    if #s >= 3 then
+        local X = s:sub(1, 3)
+        if not w[X] then
+            w[X] = {}
+        end
+        table.insert(w[X], s)
+    end
+end
+local rK = {
+    era = {"erased", "eraser", "erasers", "erasure"},
+    die = {"diego", "diets", "diesel", "dietary"},
+    ing = {"ingram", "ingot", "ingots", "ingress", "ingredient", "ingredients", "ingenious"},
+    ix = {"ixia", "ixias", "ixora", "ixoras"},
+    ek = {"eking", "eked", "ekes"},
+    ll = {"llama", "llamas", "llano", "llanos"},
+    elf = {"elfin", "elves", "elfish"},
+    vy = {"vying", "vyings"},
+    dn = {"dnase", "dnieper"},
+    bw = {"bwana", "bwanas"},
+    pz = {"pzazz", "pzazzes"},
+    xv = {"xvi", "xvii", "xviii"},
+    xm = {"xmas", "xmases"},
+    hw = {"hwyl", "hwyls"},
+    oj = {"ojibwa", "ojibway"},
+    zl = {"zloty", "zlotys"},
+    rw = {"rwanda", "rwandan", "rwandans"},
+    qw = {"qwerty", "qwerties"},
+    ns = {"nsec"},
+    ez = {"ezekiel", "ezra", "ezod", "ezods"},
+    xat = {"xats"},
+    xol = {"xolo", "xolos"},
+    oss = {"ossuary", "osseous", "ossify", "ossicle"},
+    ido = {"idol", "idols", "idolize", "idolise", "idolatry"},
+    ["and"] = {"android", "andrew", "andante", "andre"},
+    tc = {"tchotchke", "tcharik"},
+    ism = {"ismailia", "ismailism", "ismailis"},
+    ax = {"axial", "axiom", "axioms", "axles", "axle", "axes", "apex"},
+    ate = {"atelier", "ateliers", "atheism", "athens"},
+    ew = {"ewes", "ewer", "ewers"},
+    xo = {"xonotlite", "xonotlites"},
+    xi = {"xix", "ximenes"},
+    kya = {"kyanites", "kyanite", "kyat"},
+    ror = {"rorqual", "rorquals", "roridula"},
+    sv = {"svelte", "svalbard"},
+    awn = {"awned", "awning", "awnings"},
+    ps = {"psycho", "psychic", "psalm", "psalms", "psychology", "pseudo"},
+    op = {"opera", "operate", "opinion", "optical", "optics", "option", "options"},
+    ta = {"tangible", "table", "tables", "tabular", "target", "targets", "tariff", "tariffs"},
+    ad = {"address", "addition", "admit", "adopted", "adult", "advice", "advance", "advanced"},
+    sk = {"sky", "skin", "skip", "skate", "skill", "skull", "skype", "sketch"},
+    w = {"warwick", "water", "world", "write", "written", "wrong", "wrench", "waltz"},
+    q = {"queen", "quick", "quiet", "quiz", "quote", "quartz", "quality"},
+    z = {
+        "zebra",
+        "zebras",
+        "zero",
+        "zeros",
+        "zinc",
+        "zincs",
+        "zipper",
+        "zippers",
+        "zombie",
+        "zombies",
+        "zone",
+        "zones",
+        "zoning",
+        "zoology",
+        "zoologist",
+        "zucchini",
+        "zeal",
+        "zealous",
+        "zenith",
+        "zodiac",
+        "zillion",
+        "zymurgy",
+        "zircon",
+        "zirconia",
+        "zambia",
+        "zurich"
+    },
+    x = {"xray", "xrays", "xenon", "xenons", "xerox", "xylose", "xyloses", "xxix", "xcvii", "xlvii"},
+    y = {
+        "yacht",
+        "yachts",
+        "yahoo",
+        "yankee",
+        "yankees",
+        "yard",
+        "yards",
+        "yellow",
+        "yemen",
+        "yesterday",
+        "yield",
+        "yielding",
+        "yoga",
+        "yogurt",
+        "youth",
+        "youths",
+        "yummy"
+    },
+    j = {
+        "jacket",
+        "jaguar",
+        "jail",
+        "jargon",
+        "jasmine",
+        "javelin",
+        "jealous",
+        "jeans",
+        "jelly",
+        "jewel",
+        "judge",
+        "juice",
+        "jungle",
+        "jury",
+        "justice"
+    },
+    e = {
+        "eagle",
+        "early",
+        "earth",
+        "easter",
+        "eastern",
+        "echo",
+        "eclipse",
+        "ecology",
+        "economy",
+        "edition",
+        "educate",
+        "effect",
+        "effort",
+        "eight",
+        "either",
+        "elastic",
+        "elbow",
+        "elder",
+        "elect",
+        "element",
+        "elephant",
+        "elite",
+        "embark",
+        "emerald",
+        "emerge",
+        "emotion",
+        "empire",
+        "employ",
+        "empty",
+        "enable",
+        "enact",
+        "enchant",
+        "enclose",
+        "endless",
+        "endorse",
+        "endure",
+        "enemy",
+        "energy",
+        "enforce",
+        "engage",
+        "engine",
+        "enhance",
+        "enjoy",
+        "enormous",
+        "enough",
+        "enrich",
+        "ensure",
+        "enter",
+        "entire",
+        "entity",
+        "entrance",
+        "entry",
+        "envelope",
+        "environ",
+        "episode",
+        "equal",
+        "equation",
+        "equip",
+        "equity",
+        "era",
+        "erase",
+        "erosion",
+        "error",
+        "erupt",
+        "escape",
+        "escort",
+        "essay",
+        "essence",
+        "estate",
+        "estimate",
+        "eternal",
+        "ethical",
+        "ethics",
+        "evacuate",
+        "evaluate",
+        "evening",
+        "event",
+        "evidence",
+        "evident",
+        "evil",
+        "evolve",
+        "exact",
+        "examine",
+        "example",
+        "exceed",
+        "excel",
+        "except",
+        "excess",
+        "exchange",
+        "excite",
+        "exclude",
+        "excuse",
+        "execute",
+        "exempt",
+        "exercise",
+        "exhaust",
+        "exhibit",
+        "exile",
+        "exist",
+        "exit",
+        "exotic",
+        "expand",
+        "expect",
+        "expense",
+        "expert",
+        "explain",
+        "explicit",
+        "explode",
+        "explore",
+        "export",
+        "expose",
+        "express",
+        "extend",
+        "extent",
+        "extra",
+        "extract",
+        "extreme",
+        "eyelid"
+    },
+    u = {
+        "umbrella",
+        "unable",
+        "unaware",
+        "uncle",
+        "uncover",
+        "under",
+        "undergo",
+        "understand",
+        "undo",
+        "unequal",
+        "unfold",
+        "unhappy",
+        "uniform",
+        "union",
+        "unique",
+        "unit",
+        "unite",
+        "unity",
+        "universe",
+        "unknown",
+        "unless",
+        "unlike",
+        "unlock",
+        "unseen",
+        "until",
+        "untrue",
+        "unusual",
+        "unveil",
+        "update",
+        "upgrade",
+        "uphold",
+        "upon",
+        "upper",
+        "upright",
+        "uprising",
+        "upset",
+        "upstairs",
+        "upward",
+        "uranium",
+        "urban",
+        "urge",
+        "urgent",
+        "usage",
+        "useful",
+        "useless",
+        "user",
+        "usher",
+        "usual",
+        "utility",
+        "utilize",
+        "utmost",
+        "utter",
+        "uxorious"
+    }
+}
+for s, X in ipairs(rK) do
+    OK(X, 1)
+end
+local function yK()
+    local s = 0
+    if vI and JI then
+        pcall(
+            function()
+                if isfile("FinishTheWord/whitelist.txt") then
+                    local s = readfile("FinishTheWord/whitelist.txt")
+                    for s in s:gmatch("%a+") do
+                        OK(s, 1)
+                    end
+                end
+            end
+        )
+        pcall(
+            function()
+                if isfile("FinishTheWord/words.txt") then
+                    local X = readfile("FinishTheWord/words.txt")
+                    local d = 0
+                    for s in X:gmatch("%a+") do
+                        OK(s, 2)
+                        d = d + 1
+                        if d % 40000 == 0 then
+                            task.wait()
+                        end
+                    end
+                    s = s + d
+                end
+            end
+        )
+        pcall(
+            function()
+                if isfile("FinishTheWord/master_words.txt") then
+                    local X = readfile("FinishTheWord/master_words.txt")
+                    local d = 0
+                    for s in X:gmatch("%a+") do
+                        OK(s, 3)
+                        d = d + 1
+                        if d % 50000 == 0 then
+                            task.wait()
+                        end
+                    end
+                    s = s + d
+                end
+            end
+        )
+    end
+    return s > 0
+end
+local function oK(s, X, d)
+    d = d or 3
+    for d = 1, d, 1 do
+        local w, Q =
+            pcall(
+            function()
+                return game:HttpGet(s)
+            end
+        )
+        if w and (Q and #Q > 1000) then
+            local s = 0
+            for d in Q:gmatch("%a+") do
+                OK(d, X)
+                s = s + 1
+                if s % 35000 == 0 then
+                    task.wait()
+                end
+            end
+            return true
+        end
+        task.wait(1)
+    end
+    return false
+end
+task.spawn(
+    function()
+        local s = yK()
+        oK(
+            "https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-no-swears.txt",
+            1,
+            2
+        )
+        if #TI < 50000 then
+            oK("https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt", 3, 2)
+            oK(
+                "https://raw.githubusercontent.com/meetDeveloper/freeDictionaryAPI/master/meta/wordList/english.txt",
+                3,
+                2
+            )
+        end
+    end
+)
+local function NK()
+    for s, X in ipairs(game:GetDescendants()) do
+        if not EI and (X:IsA("RemoteFunction") and X.Name == "RemoteFunction") then
+            EI = X
+        end
+        if not HI and (X:IsA("RemoteEvent") and X.Name == "RemoteEvent") then
+            HI = X
+        end
+    end
+end
+local ZK
+pcall(
+    function()
+        ZK = game:GetService("CoreGui")
+    end
+)
+if not ZK then
+    ZK = LI:FindFirstChildOfClass("PlayerGui")
+end
+local mK = Instance.new("ScreenGui")
+mK.Name = "BlackDev_VIP"
+mK.ResetOnSpawn = false
+mK.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+mK.Parent = ZK
+_G.x9g = mK
+local function eK(s, X)
+    (Instance.new("UICorner", X)).CornerRadius = UDim.new(0, s)
+end
+local function lK(s, X, d)
+    local w = Instance.new("UIStroke", d)
+    w.Thickness = s
+    w.Color = X
+end
+local function WK(s, X, d)
+    (WI:Create(s, TweenInfo.new(X, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), d)):Play()
+end
+local function cK(s, X, d, w, Q, q, D, O)
+    local r = Instance.new("TextLabel", s)
+    r.Text = X
+    r.TextSize = d
+    r.TextColor3 = w
+    r.Font = Q or Enum.Font.Gotham
+    r.BackgroundTransparency = 1
+    r.TextXAlignment = q or Enum.TextXAlignment.Left
+    if D then
+        r.Position = D
+    end
+    if O then
+        r.Size = O
+    end
+    return r
+end
+local MK = 310
+local LK = Instance.new("Frame", mK)
+LK.Size = UDim2.new(0, MK, 0, 10)
+LK.Position = UDim2.new(0, 18, .5, -210)
+LK.BackgroundColor3 = Color3.fromRGB(15, 12, 24)
+LK.BorderSizePixel = 0
+LK.ClipsDescendants = true
+LK.Active = true
+eK(8, LK)
+lK(1, Color3.fromRGB(34, 197, 94), LK)
+local aK = Instance.new("UIGradient", LK)
+aK.Color =
+    ColorSequence.new(
+    {ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 24, 15)), ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 15, 10))}
+)
+aK.Rotation = 90
+local gK = Instance.new("Frame", LK)
+gK.Size = UDim2.new(1, 0, 0, 58)
+gK.BackgroundColor3 = Color3.fromRGB(12, 28, 16)
+gK.BorderSizePixel = 0
+eK(8, gK)
+local KK = Instance.new("Frame", gK)
+KK.Size = UDim2.new(1, 0, .5, 0)
+KK.Position = UDim2.new(0, 0, .5, 0)
+KK.BackgroundColor3 = Color3.fromRGB(12, 28, 16)
+KK.BorderSizePixel = 0
+local IK = Instance.new("Frame", LK)
+IK.Size = UDim2.new(1, 0, 0, 1)
+IK.Position = UDim2.new(0, 0, 0, 58)
+IK.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+IK.BackgroundTransparency = .7
+IK.BorderSizePixel = 0
+local TK = Instance.new("Frame", gK)
+TK.Size = UDim2.new(0, 7, 0, 7)
+TK.Position = UDim2.new(0, 14, 0, 15)
+TK.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+TK.BorderSizePixel = 0
+eK(99, TK)
+task.spawn(
+    function()
+        while mK and mK.Parent do
+            WK(TK, .8, {BackgroundTransparency = .7})
+            task.wait(.9)
+            WK(TK, .8, {BackgroundTransparency = 0})
+            task.wait(.9)
+        end
+    end
+)
+local xK =
+    cK(
+    gK,
+    "BLACK DEV VIP",
+    14,
+    Color3.fromRGB(255, 255, 255),
+    Enum.Font.GothamBold,
+    Enum.TextXAlignment.Left,
+    UDim2.new(0, 28, 0, 9),
+    UDim2.new(0, 120, 0, 16)
+)
+local VK =
+    cK(
+    gK,
+    "Finish The Word",
+    11,
+    Color3.fromRGB(74, 222, 128),
+    Enum.Font.Gotham,
+    Enum.TextXAlignment.Left,
+    UDim2.new(0, 28, 0, 26),
+    UDim2.new(1, -95, 0, 14)
+)
+task.spawn(
+    function()
+        pcall(
+            function()
+                local s = ((game:GetService("MarketplaceService")):GetProductInfo(game.PlaceId)).Name
+                VK.Text = s
+            end
+        )
+    end
+)
+local SK =
+    cK(
+    gK,
+    "Ready",
+    10,
+    Color3.fromRGB(34, 197, 94),
+    Enum.Font.Gotham,
+    Enum.TextXAlignment.Left,
+    UDim2.new(0, 28, 0, 41),
+    UDim2.new(1, -95, 0, 12)
+)
+local zK =
+    cK(
+    gK,
+    "470K Words",
+    10,
+    Color3.fromRGB(34, 197, 94),
+    Enum.Font.GothamMedium,
+    Enum.TextXAlignment.Right,
+    UDim2.new(1, -155, 0, 10),
+    UDim2.new(0, 85, 0, 14)
+)
+local FK = Instance.new("TextButton", gK)
+FK.Size = UDim2.new(0, 26, 0, 26)
+FK.Position = UDim2.new(1, -30, 0, 8)
+FK.BackgroundTransparency = 1
+FK.Text = "X"
+FK.TextColor3 = Color3.fromRGB(244, 63, 94)
+FK.Font = Enum.Font.GothamBold
+FK.TextSize = 12
+local jK = Instance.new("TextButton", gK)
+jK.Size = UDim2.new(0, 26, 0, 26)
+jK.Position = UDim2.new(1, -58, 0, 8)
+jK.BackgroundTransparency = 1
+jK.Text = "-"
+jK.TextColor3 = Color3.fromRGB(74, 222, 128)
+jK.Font = Enum.Font.GothamBold
+jK.TextSize = 15
+task.spawn(
+    function()
+        while mK and mK.Parent do
+            local s = (#KI + #II) + #TI
+            if s > 50000 then
+                zK.Text = math.floor(s / 1000) .. "K Words"
+            else
+                zK.Text = s .. " Words"
+            end
+            task.wait(2)
+        end
+    end
+)
+local kK, PK, EK = false, nil, nil
+aI(
+    gK.InputBegan:Connect(
+        function(s)
+            if s.UserInputType == Enum.UserInputType.MouseButton1 or s.UserInputType == Enum.UserInputType.Touch then
+                kK = true
+                PK = s.Position
+                EK = LK.Position
+                local X
+                X =
+                    s.Changed:Connect(
+                    function()
+                        if s.UserInputState == Enum.UserInputState.End then
+                            kK = false
+                            X:Disconnect()
+                        end
+                    end
+                )
+            end
+        end
+    )
+)
+aI(
+    lI.InputChanged:Connect(
+        function(s)
+            if
+                kK and
+                    (s.UserInputType == Enum.UserInputType.MouseMovement or s.UserInputType == Enum.UserInputType.Touch)
+             then
+                local X = s.Position - PK
+                WK(LK, .07, {Position = UDim2.new(EK.X.Scale, EK.X.Offset + X.X, EK.Y.Scale, EK.Y.Offset + X.Y)})
+            end
+        end
+    )
+)
+aI(
+    lI.InputBegan:Connect(
+        function(s, X)
+            if not X and s.KeyCode == Enum.KeyCode.RightShift then
+                mK.Enabled = not mK.Enabled
+            end
+        end
+    )
+)
+local HK = 66
+local function iK(s)
+    local X = Instance.new("Frame", LK)
+    X.Size = UDim2.new(1, -16, 0, s)
+    X.Position = UDim2.new(0, 8, 0, HK)
+    X.BackgroundColor3 = Color3.fromRGB(12, 28, 16)
+    X.BorderSizePixel = 0
+    eK(6, X)
+    lK(1, Color3.fromRGB(34, 197, 94), X)
+    HK = (HK + s) + 6
+    return X
+end
+local function UK(s, X, d, w)
+    local Q = X and #X > 0
+    local q = iK(Q and 48 or 40)
+    local D = Instance.new("TextButton", q)
+    D.Size = UDim2.new(1, 0, 1, 0)
+    D.BackgroundTransparency = 1
+    D.Text = ""
+    D.AutoButtonColor = false
+    if Q then
+        cK(
+            q,
+            s,
+            12,
+            Color3.fromRGB(245, 240, 255),
+            Enum.Font.GothamBold,
+            Enum.TextXAlignment.Left,
+            UDim2.new(0, 12, 0, 7),
+            UDim2.new(.65, 0, 0, 16)
+        )
+        cK(
+            q,
+            X,
+            10,
+            Color3.fromRGB(134, 239, 172),
+            Enum.Font.Gotham,
+            Enum.TextXAlignment.Left,
+            UDim2.new(0, 12, 0, 24),
+            UDim2.new(.65, 0, 0, 14)
+        )
+    else
+        cK(
+            q,
+            s,
+            12,
+            Color3.fromRGB(245, 240, 255),
+            Enum.Font.GothamBold,
+            Enum.TextXAlignment.Left,
+            UDim2.new(0, 12, .5, -8),
+            UDim2.new(.65, 0, 0, 16)
+        )
+    end
+    local O = Instance.new("Frame", q)
+    O.Size = UDim2.new(0, 40, 0, 22)
+    O.Position = UDim2.new(1, -50, .5, -11)
+    O.BackgroundColor3 = d and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(20, 48, 24)
+    O.BorderSizePixel = 0
+    eK(99, O)
+    local r = Instance.new("Frame", O)
+    r.Size = UDim2.new(0, 16, 0, 16)
+    r.Position = d and UDim2.new(1, -18, .5, -8) or UDim2.new(0, 2, .5, -8)
+    r.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    r.BorderSizePixel = 0
+    eK(99, r)
+    local y = d
+    D.MouseButton1Click:Connect(
+        function()
+            y = not y
+            w(y)
+            WK(O, .16, {BackgroundColor3 = y and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(20, 48, 24)})
+            WK(r, .16, {Position = y and UDim2.new(1, -18, .5, -8) or UDim2.new(0, 2, .5, -8)})
+        end
+    )
+    D.MouseEnter:Connect(
+        function()
+            WK(q, .1, {BackgroundColor3 = Color3.fromRGB(32, 22, 52)})
+        end
+    )
+    D.MouseLeave:Connect(
+        function()
+            WK(q, .1, {BackgroundColor3 = Color3.fromRGB(12, 28, 16)})
+        end
+    )
+end
+local function JK(s, X, d, w)
+    local Q = iK(54)
+    cK(
+        Q,
+        s,
+        12,
+        Color3.fromRGB(245, 240, 255),
+        Enum.Font.GothamBold,
+        Enum.TextXAlignment.Left,
+        UDim2.new(0, 12, 0, 8),
+        UDim2.new(.5, 0, 0, 16)
+    )
+    local q =
+        cK(
+        Q,
+        X[d].l,
+        12,
+        Color3.fromRGB(34, 197, 94),
+        Enum.Font.GothamBold,
+        Enum.TextXAlignment.Right,
+        UDim2.new(.4, 0, 0, 8),
+        UDim2.new(.56, -12, 0, 16)
+    )
+    local D = Instance.new("Frame", Q)
+    D.Size = UDim2.new(1, -24, 0, 4)
+    D.Position = UDim2.new(0, 12, 0, 36)
+    D.BackgroundColor3 = Color3.fromRGB(20, 48, 24)
+    D.BorderSizePixel = 0
+    eK(99, D)
+    local O = Instance.new("Frame", D)
+    O.Size = UDim2.new(0, 0, 1, 0)
+    O.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+    O.BorderSizePixel = 0
+    eK(99, O)
+    local r = Instance.new("Frame", D)
+    r.Size = UDim2.new(0, 12, 0, 12)
+    r.Position = UDim2.new(0, -6, .5, -6)
+    r.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    r.BorderSizePixel = 0
+    r.ZIndex = 5
+    eK(99, r)
+    lK(1.5, Color3.fromRGB(34, 197, 94), r)
+    local function y(s)
+        s = math.clamp(s, 1, #X)
+        q.Text = X[s].l
+        local d = (s - 1) / (#X - 1)
+        if d ~= d then
+            d = 0
+        end
+        WK(O, .08, {Size = UDim2.new(d, 0, 1, 0)})
+        WK(r, .08, {Position = UDim2.new(d, -6, .5, -6)})
+        w(X[s].v)
+    end
+    y(d)
+    local o = false
+    local function N(s)
+        local d = math.clamp((s - D.AbsolutePosition.X) / D.AbsoluteSize.X, 0, 1)
+        y(math.round(d * (#X - 1)) + 1)
+    end
+    aI(
+        D.InputBegan:Connect(
+            function(s)
+                if s.UserInputType == Enum.UserInputType.MouseButton1 or s.UserInputType == Enum.UserInputType.Touch then
+                    o = true
+                    N(s.Position.X)
+                end
+            end
+        )
+    )
+    aI(
+        r.InputBegan:Connect(
+            function(s)
+                if s.UserInputType == Enum.UserInputType.MouseButton1 or s.UserInputType == Enum.UserInputType.Touch then
+                    o = true
+                end
+            end
+        )
+    )
+    aI(
+        lI.InputChanged:Connect(
+            function(s)
+                if
+                    o and
+                        (s.UserInputType == Enum.UserInputType.MouseMovement or
+                            s.UserInputType == Enum.UserInputType.Touch)
+                 then
+                    N(s.Position.X)
+                end
+            end
+        )
+    )
+    aI(
+        lI.InputEnded:Connect(
+            function(s)
+                if s.UserInputType == Enum.UserInputType.MouseButton1 or s.UserInputType == Enum.UserInputType.Touch then
+                    o = false
+                end
+            end
+        )
+    )
+end
+local function vK(s, X, d)
+    local w = iK(46)
+    local Q = Instance.new("TextButton", w)
+    Q.Size = UDim2.new(1, 0, 1, 0)
+    Q.BackgroundTransparency = 1
+    Q.Text = ""
+    Q.AutoButtonColor = false
+    cK(
+        w,
+        s,
+        12,
+        Color3.fromRGB(245, 240, 255),
+        Enum.Font.GothamBold,
+        Enum.TextXAlignment.Left,
+        UDim2.new(0, 12, 0, 7),
+        UDim2.new(.65, 0, 0, 16)
+    )
+    cK(
+        w,
+        X,
+        10,
+        Color3.fromRGB(134, 239, 172),
+        Enum.Font.Gotham,
+        Enum.TextXAlignment.Left,
+        UDim2.new(0, 12, 0, 24),
+        UDim2.new(.65, 0, 0, 14)
+    )
+    local q =
+        cK(
+        w,
+        ">",
+        16,
+        Color3.fromRGB(34, 197, 94),
+        Enum.Font.GothamBold,
+        Enum.TextXAlignment.Center,
+        UDim2.new(1, -36, .5, -8),
+        UDim2.new(0, 16, 0, 16)
+    )
+    Q.MouseButton1Click:Connect(
+        function()
+            WK(q, .08, {TextSize = 12})
+            task.wait(.02)
+            WK(q, .08, {TextSize = 16})
+            d()
+        end
+    )
+    Q.MouseEnter:Connect(
+        function()
+            WK(w, .1, {BackgroundColor3 = Color3.fromRGB(32, 22, 52)})
+        end
+    )
+    Q.MouseLeave:Connect(
+        function()
+            WK(w, .1, {BackgroundColor3 = Color3.fromRGB(12, 28, 16)})
+        end
+    )
+end
+UK(
+    "Auto Answer",
+    "Types best word automatically",
+    gI.ans,
+    function(s)
+        gI.ans = s
+    end
+)
+UK(
+    "Trap Opponents",
+    nil,
+    gI.trapMode,
+    function(s)
+        gI.trapMode = s
+    end
+)
+vK(
+    "Server Hop",
+    "Join a new public server",
+    function()
+        task.spawn(iI)
+    end
+)
+vK(
+    "Join Discord",
+    "Black Dev Community",
+    function()
+        local s = "APBg662gH"
+        local X = "https://discord.gg/" .. s
+        if setclipboard then
+            pcall(setclipboard, X)
+        end
+    end
+)
+JK(
+    "Word Length",
+    {{l = "Long", v = 1}, {l = "Natural", v = 2}, {l = "Short", v = 3}},
+    2,
+    function(s)
+        gI.lengthMode = s
+    end
+)
+JK(
+    "Typing Speed",
+    {
+        {l = "Instant", v = .01},
+        {l = "Godlike", v = .03},
+        {l = "Fast", v = .05},
+        {l = "Quick", v = .08},
+        {l = "Normal", v = .11},
+        {l = "Natural", v = .15},
+        {l = "Slow", v = .2}
+    },
+    4,
+    function(s)
+        gI.delay = s
+    end
+)
+JK(
+    "Reaction Time",
+    {
+        {l = "Instant", v = 0},
+        {l = "Fast", v = .3},
+        {l = "Normal", v = .8},
+        {l = "Thinking", v = 1.5},
+        {l = "Slow", v = 2.5}
+    },
+    1,
+    function(s)
+        gI.reaction = s
+    end
+)
+local pK = iK(46)
+cK(
+    pK,
+    "CURRENT WORD",
+    9,
+    Color3.fromRGB(134, 239, 172),
+    Enum.Font.GothamBold,
+    Enum.TextXAlignment.Left,
+    UDim2.new(0, 12, 0, 5),
+    UDim2.new(.6, 0, 0, 12)
+)
+local YK =
+    cK(
+    pK,
+    "",
+    10,
+    Color3.fromRGB(34, 197, 94),
+    Enum.Font.GothamBold,
+    Enum.TextXAlignment.Right,
+    UDim2.new(0, 0, 0, 4),
+    UDim2.new(1, -12, 0, 14)
+)
+local uK = Instance.new("TextBox", pK)
+uK.Text = "---"
+uK.TextSize = 16
+uK.TextColor3 = Color3.fromRGB(255, 255, 255)
+uK.Font = Enum.Font.GothamBold
+uK.BackgroundTransparency = 1
+uK.TextXAlignment = Enum.TextXAlignment.Left
+uK.Position = UDim2.new(0, 12, 0, 18)
+uK.Size = UDim2.new(1, -24, 0, 22)
+uK.ClearTextOnFocus = true
+uK.PlaceholderText = "Type prefix if stuck..."
+local AK = iK(30)
+local nK = Instance.new("Frame", AK)
+nK.Size = UDim2.new(0, 6, 0, 6)
+nK.Position = UDim2.new(0, 12, .5, -3)
+nK.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+nK.BorderSizePixel = 0
+eK(99, nK)
+local BK =
+    cK(
+    AK,
+    "Ready",
+    11,
+    Color3.fromRGB(74, 222, 128),
+    Enum.Font.GothamMedium,
+    Enum.TextXAlignment.Left,
+    UDim2.new(0, 25, 0, 0),
+    UDim2.new(1, -28, 1, 0)
+)
+local hK = HK + 8
+LK.Size = UDim2.new(0, MK, 0, hK)
+local tK = false
+jK.MouseButton1Click:Connect(
+    function()
+        tK = not tK
+        if tK then
+            WK(LK, .2, {Size = UDim2.new(0, MK, 0, 58)})
+        else
+            WK(LK, .2, {Size = UDim2.new(0, MK, 0, hK)})
+        end
+    end
+)
+FK.MouseButton1Click:Connect(
+    function()
+        if _G.x9c then
+            for s, X in pairs(_G.x9c) do
+                pcall(
+                    function()
+                        X:Disconnect()
+                    end
+                )
+            end
+        end
+        if _G.x9g then
+            pcall(
+                function()
+                    _G.x9g:Destroy()
+                end
+            )
+        end
+    end
+)
+local function RK(s, X)
+    local d = X or Color3.fromRGB(34, 197, 94)
+    BK.Text = s
+    BK.TextColor3 = d
+    nK.BackgroundColor3 = d
+    SK.Text = s
+    SK.TextColor3 = d
+    TK.BackgroundColor3 = d
+end
+local fK = nil
+local function bK()
+    if fK and (fK.Parent and fK.Visible) then
+        return fK
+    end
+    local s = lI:GetFocusedTextBox()
+    if s and not s:IsDescendantOf(mK) then
+        fK = s
+        return s
+    end
+    local X = LI:FindFirstChildOfClass("PlayerGui")
+    if not X then
+        return nil
+    end
+    for s, X in ipairs(X:GetDescendants()) do
+        if X:IsA("TextBox") and (X.Visible and X.AbsoluteSize.Y > 15) then
+            if not X:IsDescendantOf(mK) and X.Name ~= "ChatBar" then
+                fK = X
+                return X
+            end
+        end
+    end
+    return nil
+end
+task.spawn(
+    function()
+        pcall(
+            function()
+                if type(getconnections) == "function" then
+                    for s, X in ipairs(getconnections(LI.Idled)) do
+                        if X.Disable then
+                            X:Disable()
+                        elseif X.Disconnect then
+                            X:Disconnect()
+                        end
+                    end
+                end
+            end
+        )
+        local s = game:GetService("VirtualUser")
+        aI(
+            LI.Idled:Connect(
+                function()
+                    pcall(
+                        function()
+                            s:CaptureController()
+                            s:ClickButton2(Vector2.new(0, 0))
+                        end
+                    )
+                    pcall(
+                        function()
+                            cI:SendKeyEvent(true, Enum.KeyCode.Unknown, false, game)
+                            task.wait(.05)
+                            cI:SendKeyEvent(false, Enum.KeyCode.Unknown, false, game)
+                        end
+                    )
+                end
+            )
+        )
+        task.spawn(
+            function()
+                while true do
+                    task.wait(300)
+                    pcall(
+                        function()
+                            s:CaptureController()
+                            s:ClickButton2(Vector2.new(0, 0))
+                        end
+                    )
+                    pcall(
+                        function()
+                            cI:SendKeyEvent(true, Enum.KeyCode.Unknown, false, game)
+                            task.wait(.02)
+                            cI:SendKeyEvent(false, Enum.KeyCode.Unknown, false, game)
+                        end
+                    )
+                end
+            end
+        )
+    end
+)
+BI = function()
+end
+hI = function(s, X, d, w)
+    X = X or ""
+    d = d or ""
+    w = w or ""
+    if s == "REJECTED" then
+        if not uI[d:lower()] then
+            uI[d:lower()] = true
+            table.insert(YI, d:lower())
+        end
+        DK(d:lower(), X:lower())
+        qK(d:lower())
+    elseif s == "NO_MATCH" then
+        if not nI[X:lower()] then
+            nI[X:lower()] = true
+            table.insert(AI, X:lower())
+        end
+        RI(X:lower())
+    end
+end
+local function CK(s, X, d)
+    if #X > 0 and s:sub(1, #X) ~= X then
+        return false
+    end
+    local w = (#X <= 1) and 4 or (#X + 1)
+    if #s < w then
+        return false
+    end
+    if d and d ~= "" then
+        local X = d:match("(%d+)%+%s*letters") or d:match("with%s+(%d+)%+") or d:match("(%d+)%s*letters")
+        if X and #s < tonumber(X) then
+            return false
+        end
+        local w = d:match("ends%s+with%s+(%a+)") or d:match("ending%s+with%s+(%a+)")
+        if w and s:sub(-(#w)) ~= w then
+            return false
+        end
+        local Q = d:match("contains%s+(%a+)") or d:match("contain%s+(%a+)")
+        if Q and not s:find(Q, 1, true) then
+            return false
+        end
+    end
+    return true
+end
+local function GK(s)
+    if #s < 3 or #s > 14 then
+        return false
+    end
+    local X = s:lower()
+    if
+        X:find("wiki") or X:find("soft") or X:find("ware") or X:find("site") or X:find("online") or X:find("cyber") or
+            X:find("tech") or
+            X:find("corp") or
+            X:find("ebook") or
+            X:find("everytime") or
+            X:find("realtime") or
+            X:find("namespace")
+     then
+        return false
+    end
+    if X:match("(%a)%1%1") then
+        return false
+    end
+    return true
+end
+local function sd(s, X, d, w)
+    s = ((s or ""):lower()):gsub("%s+", "")
+    X = (X or ""):lower()
+    if rK[s] then
+        local w = {}
+        for Q, q in ipairs(rK[s]) do
+            if not dK[q] and ((d or not zI[q]) and (GK(q) and CK(q, s, X))) then
+                table.insert(w, q)
+            end
+        end
+        if #w > 0 then
+            return w[math.random(1, #w)]
+        end
+    end
+    local function Q(w, Q)
+        local q = nil
+        if #s == 0 then
+            q = Q
+        elseif #s >= 3 then
+            q = w[s:sub(1, 3)] or w[s:sub(1, 2)] or w[s:sub(1, 1)] or {}
+        elseif #s == 2 then
+            q = w[s] or w[s:sub(1, 1)] or {}
+        else
+            q = w[s] or {}
+        end
+        local D = {}
+        local O = #q
+        if O == 0 then
+            return D
+        end
+        local r = math.random(1, O)
+        local y = 25
+        local o = math.min(O, 2500)
+        for w = 1, o, 1 do
+            local Q = (((r + w) - 2) % O) + 1
+            local o = q[Q]
+            if not dK[o] and ((d or not zI[o]) and (GK(o) and CK(o, s, X))) then
+                table.insert(D, o)
+                if #D >= y then
+                    break
+                end
+            end
+        end
+        return D
+    end
+    local q = Q(xI, KI)
+    if #q == 0 then
+        q = Q(VI, II)
+    end
+    if #q == 0 then
+        q = Q(SI, TI)
+    end
+    if #q == 0 then
+        return nil
+    end
+    if w > 1 then
+        local s = {}
+        for X, d in ipairs(q) do
+            if #d >= 5 and #d <= 8 then
+                table.insert(s, d)
+            end
+        end
+        if #s > 0 then
+            return s[math.random(1, #s)]
+        else
+            return q[math.random(1, #q)]
+        end
+    end
+    if gI.trapMode and w == 1 then
+        local s = {
+            box = true,
+            fox = true,
+            six = true,
+            tax = true,
+            wax = true,
+            mix = true,
+            fix = true,
+            relax = true,
+            complex = true,
+            matrix = true,
+            index = true,
+            prefix = true,
+            suffix = true,
+            climax = true,
+            reflex = true,
+            syntax = true,
+            vertex = true,
+            cortex = true,
+            duplex = true,
+            inbox = true,
+            mailbox = true,
+            sandbox = true,
+            outbox = true,
+            icebox = true,
+            toolbox = true,
+            apex = true,
+            crux = true,
+            flux = true,
+            lynx = true,
+            onyx = true,
+            sphinx = true,
+            flax = true,
+            detox = true,
+            affix = true,
+            unfix = true,
+            remix = true,
+            coax = true,
+            hoax = true,
+            phlox = true,
+            paradox = true,
+            orthodox = true,
+            equinox = true,
+            crucifix = true,
+            menu = true,
+            guru = true,
+            tofu = true,
+            emu = true,
+            flu = true,
+            bayou = true,
+            bureau = true,
+            plateau = true,
+            chateau = true,
+            kudu = true,
+            gnu = true,
+            tutu = true,
+            luau = true,
+            haiku = true,
+            sudoku = true,
+            yuzu = true,
+            tiramisu = true,
+            caribou = true,
+            blitz = true,
+            waltz = true,
+            quiz = true,
+            buzz = true,
+            fizz = true,
+            jazz = true,
+            fuzz = true
+        }
+        local X = {}
+        for d, w in ipairs(q) do
+            if s[w] then
+                table.insert(X, w)
+            end
+        end
+        if #X == 0 then
+            for s, d in ipairs(q) do
+                local w = d:sub(-1)
+                if w == "x" or w == "u" or w == "z" then
+                    table.insert(X, d)
+                end
+            end
+        end
+        if #X > 0 then
+            q = X
+        end
+    end
+    if gI.lengthMode == 1 then
+        table.sort(
+            q,
+            function(s, X)
+                return #s > #X
+            end
+        )
+        local s = math.clamp(math.random(1, math.min(4, #q)), 1, #q)
+        return q[s]
+    elseif gI.lengthMode == 3 then
+        local X = {}
+        for d, w in ipairs(q) do
+            if #w >= math.max(#s + 1, 4) and #w <= 6 then
+                table.insert(X, w)
+            end
+        end
+        if #X > 0 then
+            return X[math.random(1, #X)]
+        else
+            table.sort(
+                q,
+                function(s, X)
+                    return #s < #X
+                end
+            )
+            return q[1]
+        end
+    else
+        local s = {}
+        local X = {}
+        for d, w in ipairs(q) do
+            local Q = #w
+            if Q >= 5 and Q <= 9 then
+                table.insert(s, w)
+            elseif Q >= 4 and Q <= 11 then
+                table.insert(X, w)
+            end
+        end
+        if #s > 0 then
+            return s[math.random(1, #s)]
+        elseif #X > 0 then
+            return X[math.random(1, #X)]
+        else
+            return q[math.random(1, #q)]
+        end
+    end
+end
+local function Xd(s)
+    local X = bK()
+    if X then
+        pcall(
+            function()
+                X.Text = ""
+            end
+        )
+    end
+    for s = 1, s, 1 do
+        pcall(
+            function()
+                cI:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                task.wait(.008)
+                cI:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+            end
+        )
+        if gI.clearDelay > 0 then
+            task.wait(gI.clearDelay)
+        end
+    end
+end
+local function dd(s, X, d)
+    zI[s] = true
+    FI[s] = os.time()
+    X = (X:lower()):gsub("%s+", "")
+    local w = s:sub(#X + 1)
+    local Q = #w
+    uK.Text = X:upper() .. string.rep("_", Q)
+    YK.Text = "0 / " .. Q
+    RK("Typing: " .. s:upper(), Color3.fromRGB(34, 197, 94))
+    if gI.reaction > 0 then
+        local s = 0
+        while s < gI.reaction do
+            task.wait(.05)
+            s = s + .05
+            if PI ~= d then
+                return "roundChanged"
+            end
+        end
+    end
+    local q = bK()
+    if q then
+        pcall(
+            function()
+                q:CaptureFocus()
+                q.Text = ""
+            end
+        )
+        task.wait(.04)
+    end
+    if PI ~= d then
+        return "roundChanged"
+    end
+    local D = (X:sub(-1)):upper()
+    for s = 1, Q, 1 do
+        if PI ~= d then
+            return "roundChanged"
+        end
+        local q = (w:sub(s, s)):upper()
+        local O = bI[q]
+        if O then
+            if q == D then
+                task.wait(.03)
+            end
+            D = q
+            pcall(
+                function()
+                    cI:SendKeyEvent(true, O, false, game)
+                    task.wait(.022)
+                    cI:SendKeyEvent(false, O, false, game)
+                end
+            )
+        end
+        local r = X:upper() .. ((w:sub(1, s)):upper() .. string.rep("_", Q - s))
+        uK.Text = r
+        YK.Text = s .. (" / " .. Q)
+        local y = math.max(.025, gI.delay * (.85 + math.random() * .25))
+        task.wait(y)
+    end
+    if PI ~= d then
+        return "roundChanged"
+    end
+    task.wait(.06)
+    if q then
+        pcall(
+            function()
+                if q.Text ~= w and #q.Text < #w then
+                    q.Text = w
+                end
+            end
+        )
+    end
+    task.wait(.03)
+    pcall(
+        function()
+            cI:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+            task.wait(.04)
+            cI:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+        end
+    )
+    if q then
+        pcall(
+            function()
+                q:ReleaseFocus(true)
+            end
+        )
+    end
+    RK("Sent: " .. s:upper(), Color3.fromRGB(34, 197, 94))
+    local O = 0
+    while O < 1 do
+        task.wait(.05)
+        O = O + .05
+        if PI ~= d then
+            hI("ACCEPTED", X, s, "Accepted by server")
+            return "accepted"
+        end
+    end
+    qK(s)
+    hI("REJECTED", X, s, "Server did not accept word")
+    return "rejected"
+end
+local function wd()
+    if kI or not jI then
+        return
+    end
+    kI = true
+    local s = PI
+    if jI.Choices then
+        if gI.cho then
+            local s = jI.Choices[1]
+            if s then
+                uK.Text = s:upper()
+                YK.Text = "CHOICE"
+                RK("Selecting: " .. s:upper(), Color3.fromRGB(34, 197, 94))
+                fireRemote("chooseLetter", s:lower())
+                hI("INFO", "", "", "Selected Choice Letter: " .. s:upper())
+            end
+        end
+        kI = false
+        return
+    end
+    if not gI.ans then
+        kI = false
+        return
+    end
+    local X = ((jI.RequiredLetter or ""):lower()):gsub("%s+", "")
+    local d = (jI.QuestionLabel or ""):lower()
+    for w = 1, 6, 1 do
+        if PI ~= s then
+            break
+        end
+        local Q = sd(X, d, false, w)
+        if not Q then
+            Q = sd(X, d, true, w)
+        end
+        if not Q then
+            RK("No match for: " .. X:upper(), Color3.fromRGB(255, 150, 0))
+            hI("NO_MATCH", X, "", "No matching word found in any dictionary tier")
+            uK.Text = "---"
+            YK.Text = ""
+            break
+        end
+        local q = dd(Q, X, s)
+        if q == "accepted" or q == "roundChanged" then
+            break
+        elseif q == "rejected" then
+            RK("Rejected! Retrying (" .. (w .. "/6)..."), Color3.fromRGB(255, 50, 50))
+            task.wait(.02)
+            local s = Q:sub(#X + 1)
+            Xd(#s + 4)
+            task.wait(.04)
+        end
+    end
+    uK.Text = "---"
+    YK.Text = ""
+    kI = false
+end
+function iI()
+    RK("Hopping Servers...", Color3.fromRGB(34, 197, 94))
+    local s = game:GetService("TeleportService")
+    local X = game.PlaceId
+    local d = {}
+    local w = request or http_request or (syn and syn.request)
+    if w then
+        pcall(
+            function()
+                local s =
+                    w(
+                    {
+                        Url = "https://games.roblox.com/v1/games/" .. (X .. "/servers/Public?sortOrder=Desc&limit=100"),
+                        Method = "GET"
+                    }
+                )
+                if s and s.Body then
+                    local X = MI:JSONDecode(s.Body)
+                    if X and X.data then
+                        for s, X in ipairs(X.data) do
+                            if X.playing < X.maxPlayers and X.id ~= game.JobId then
+                                table.insert(d, X.id)
+                            end
+                        end
+                    end
+                end
+            end
+        )
+    end
+    if #d > 0 then
+        local w = d[math.random(1, #d)]
+        s:TeleportToPlaceInstance(X, w, LI)
+    else
+        s:Teleport(X, LI)
+    end
+end
+task.spawn(
+    function()
+        if not game:IsLoaded() then
+            game.Loaded:Wait()
+        end
+        task.wait(1.2)
+        local s = 0
+        repeat
+            NK()
+            if not EI or not HI then
+                s = s + .5
+                RK("Scanning... (" .. (s .. "s)"), Color3.fromRGB(255, 150, 0))
+                task.wait(.5)
+            end
+        until (EI and HI) or s >= 25
+        if not HI then
+            for s, X in ipairs(game:GetDescendants()) do
+                if X:IsA("RemoteFunction") and not EI then
+                    EI = X
+                end
+                if X:IsA("RemoteEvent") and not HI then
+                    HI = X
+                end
+            end
+        end
+        if not HI then
+            RK("Error: Remotes not found", Color3.fromRGB(255, 50, 50))
+            hI("INFO", "", "", "ERROR: Remotes not found in game")
+            return
+        end
+        local X, d = 0, 0
+        for s, w in ipairs(game:GetDescendants()) do
+            if w:IsA("RemoteEvent") then
+                X = X + 1
+            end
+            if w:IsA("RemoteFunction") then
+                d = d + 1
+            end
+        end
+        RK("Connected (" .. (X .. (" RE / " .. (d .. " RF)"))), Color3.fromRGB(34, 197, 94))
+        hI("INFO", "", "", "Successfully connected to Game Remotes (" .. (X .. (" RE / " .. (d .. " RF)"))))
+        aI(
+            HI.OnClientEvent:Connect(
+                function(s, ...)
+                    local X = {...}
+                    for s, X in ipairs(X) do
+                        if type(X) == "string" and (#X >= 2 and not X:match("[^%a]")) then
+                            local s = (X:lower()):gsub("%s+", "")
+                            zI[s] = true
+                        end
+                    end
+                    if s == "updateRound" then
+                        PI = PI + 1
+                        jI = X[1]
+                        kI = false
+                        local s = false
+                        if X[3] then
+                            if typeof(X[3]) == "Instance" and X[3]:IsA("Player") then
+                                s = (X[3] == LI)
+                            elseif type(X[3]) == "string" then
+                                s = (X[3]:lower() == LI.Name:lower()) or (X[3]:lower() == LI.DisplayName:lower())
+                            end
+                        end
+                        if s then
+                            hI(
+                                "INFO",
+                                jI and jI.RequiredLetter or "",
+                                "",
+                                "My Turn! Prompt: '" .. ((jI and jI.RequiredLetter or "?") .. "'")
+                            )
+                            task.spawn(wd)
+                        else
+                            RK("Waiting for turn...", Color3.fromRGB(134, 239, 172))
+                        end
+                    elseif s == "correct" then
+                        PI = PI + 1
+                        RK("Correct!", Color3.fromRGB(34, 197, 94))
+                    elseif s == "incorrect" or s == "wrong" then
+                        RK("Wrong word!", Color3.fromRGB(255, 50, 50))
+                    end
+                end
+            )
+        )
+        aI(
+            uK.FocusLost:Connect(
+                function()
+                    local s = uK.Text:match("^%a+")
+                    if s and #s > 0 then
+                        jI = {RequiredLetter = s}
+                        kI = false
+                        PI = PI + 1
+                        hI("INFO", s, "", "Manual input triggered for: '" .. (s .. "'"))
+                        task.spawn(wd)
+                    else
+                        uK.Text = "---"
+                    end
+                end
+            )
+        )
+        aI(
+            (LI:GetAttributeChangedSignal("InGame")):Connect(
+                function()
+                    if not LI:GetAttribute("InGame") then
+                        table.clear(zI)
+                        PI = PI + 1
+                        jI = nil
+                        kI = false
+                        uK.Text = "---"
+                        YK.Text = ""
+                        RK("Lobby", Color3.fromRGB(134, 239, 172))
+                        hI("INFO", "", "", "Returned to Lobby. Cleared match words cache.")
+                    end
+                end
+            )
+        )
+    end
+)
